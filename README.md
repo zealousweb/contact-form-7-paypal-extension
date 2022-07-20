@@ -1,0 +1,2 @@
+# contact-form-7-paypal-extension
+The payment collection is possible with the form using this plugin. Accept PayPal Payments Using Contact Form 7 will solve all integration problems efficiently. As the newly extended plugin seamlessly integrates PayPal with Contact Form 7 by allowing the WordPress developers, to add a PayPal submit button in the contact form 7 that redirects to PayPal’s website so that you can continue with secure payment. After submitting the form, the payment is one click away.
