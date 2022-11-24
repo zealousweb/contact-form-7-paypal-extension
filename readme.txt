@@ -44,8 +44,8 @@ We have released the PRO version of this plugin with extra advantageous features
 * Send email to user and admin for successful payment receipts with PayPal response details in the content.
 
 <strong>[Demo for Contact 7- PayPal Extension Pro](http://demo.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro/)</strong>
-<strong>[Documentation](https://www.zealousweb.com/documentation/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro/)</strong>
-<strong>[Get more information of Pro version here](https://www.zealousweb.com/wordpress-plugins/product/accept-paypal-payments-using-contact-form-7-pro/)</strong>
+<strong>[Documentation](https://www.zealousweb.com/store/accept-paypal-payments-using-contact-form-7-pro)</strong>
+<strong>[Get more information of Pro version here](https://www.zealousweb.com/store/accept-paypal-payments-using-contact-form-7-pro)</strong>
 
 == OUR OTHER PLUGINS ==
 
