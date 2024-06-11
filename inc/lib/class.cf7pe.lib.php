@@ -81,7 +81,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$form_ID = $from_data->get_contact_form()->id();
 
 				add_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
-				$this->mail( $from_data, $from_data->get_posted_data() );
 				remove_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
 
 				/*if ( isset( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] ) ) {

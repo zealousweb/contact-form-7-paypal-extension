@@ -1,16 +1,16 @@
 === Accept PayPal Payments using Contact Form 7 ===
 
 Contributors: zealopensource
-Tags: Contact Form 7, Paypal, paypal donation, online payment, contact form 7 paypal, stripe, pay online, stripe checkout, stripe donation, payment using credit card, CF7 stripe, paypal payment gateway,authorize.net, Authorize.Net, authorize.net payment gateway
+Tags: Contact Form 7, Paypal, paypal donation, online payment, contact form 7 paypal
 Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
-Tested up to: 6.0
+Tested up to: 6.5
 Requires PHP: 5.6
-Stable tag: 3.7
+Stable tag: 3.8
 License: GPLv3 or later License
 CF7 requires at least: 3.0
-CF7 tested up to: 5.6
-Version: 3.7
+CF7 tested up to: 5.8
+Version: 3.8
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Integrate PayPal Submit button in Contact Form 7 to Enjoy Quick Online Payments.
@@ -43,26 +43,24 @@ We have released the PRO version of this plugin with extra advantageous features
 * Admin can manage ‘Status’ of submitted data if PayPal payment has been successfully received.
 * Send email to user and admin for successful payment receipts with PayPal response details in the content.
 
-<strong>[Demo for Contact 7- PayPal Extension Pro](http://demo.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro/)</strong>
-<strong>[Documentation](https://www.zealousweb.com/documentation/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro/)</strong>
-<strong>[Get more information of Pro version here](https://www.zealousweb.com/wordpress-plugins/product/accept-paypal-payments-using-contact-form-7-pro/)</strong>
+<strong>[Demo for Contact 7- PayPal Extension Pro](http://store.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro)</strong>
+<strong>[Documentation](https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7-pro)</strong>
+<strong>[Get more information of Pro version here](https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7-pro)</strong>
 
 == OUR OTHER PLUGINS ==
 
-* <strong>[Accept Stripe Payments Using Contact Form 7 Pro](https://www.zealousweb.com/wordpress-plugins/accept-stripe-payments-using-contact-form-7/)</strong>
-* <strong>[Accept Authorize.NET Payments Using Contact Form 7 Pro](https://www.zealousweb.com/wordpress-plugins/accept-authorize-net-payments-using-contact-form-7/)</strong>
-* <strong>[Accept Worldpay Payments Using Contact Form 7 Pro](https://www.zealousweb.com/wordpress-plugins/accept-worldpay-payments-using-contact-form-7-pro/)</strong>
-* <strong>[Accept Elavon Payments Using Contact Form 7 Pro](https://www.zealousweb.com/wordpress-plugins/accept-elavon-payments-using-contact-form-7-pro/)</strong>
-* <strong>[Accept Qpay payments Using Contact form 7 Pro](https://www.zealousweb.com/wordpress-plugins/accept-qpay-payments-using-contact-form-7-pro/)</strong>
-* <strong>[Accept 2Checkout Payments Using Contact Form 7 Pro](https://www.zealousweb.com/wordpress-plugins/accept-2checkout-payments-using-contact-form-7-pro/)</strong>
-* <strong>[Accept Sage Pay Payments Using Contact Form 7 Pro](https://www.zealousweb.com/wordpress-plugins/accept-sagepay-payments-using-contact-form-7-pro/)</strong>
-* <strong>[User Registration Using Contact Form 7 Pro](https://www.zealousweb.com/wordpress-plugins/user-registration-using-contact-form-7-pro/)</strong>
-* <strong>[Abandoned Contact Form 7 Pro](https://www.zealousweb.com/wordpress-plugins/abandoned-contact-form-7-pro/)</strong>
-* <strong>[Custom Product Options WooCommerce Pro](https://www.zealousweb.com/wordpress-plugins/custom-product-options-woocommerce-pro/)</strong>
+* <strong>[Accept Stripe Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-stripe-payments-using-contact-form-7-pro)</strong>
+* <strong>[Accept Authorize.NET Payments Using Contact Form 7 Pro](https://store.zealousweb.com/accept-authorize-net-payments-using-contact-form-7)</strong>
+* <strong>[Accept Elavon Payments Using Contact Form 7 Pro](https://store.zealousweb.com/accept-elavon-payments-using-contact-form-7-pro)</strong>
+* <strong>[Accept 2Checkout Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-2checkout-payments-using-contact-form-7-pro)</strong>
+* <strong>[Accept Sage Pay Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-sage-pay-payments-using-contact-form-7-pro)</strong>
+* <strong>[User Registration Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/user-registration-using-contact-form-7-pro)</strong>
+* <strong>[Abandoned Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/abandoned-contact-form-7-pro)</strong>
+* <strong>[Custom Product Options WooCommerce Pro](https://store.zealousweb.com/wordpress-plugins/custom-product-options-woocommerce-pro)</strong>
 
 = Getting Help With Wordpress =
 
-If you have any questions about this plugin, you can post a thread in our [WordPress.org forum](https://wordpress.org/support/plugin/contact-form-7-paypal-extension/). Please search existing threads before opening a new one or feel free to contact us at <a href="mailto::opensource@zealousweb.com">opensource@zealousweb.com</a>
+If you have any questions about this plugin, you can post a thread in our [WordPress.org forum](https://wordpress.org/support/plugin/contact-form-7-paypal-extension/). Please search existing threads before opening a new one or feel free to contact us at <a href="mailto:support@zealousweb.com">support@zealousweb.com</a>
 
 We also offer custom Wordpress extension development and Wordpress theme design services to fulfill your e-commerce objectives.
 
@@ -98,6 +96,9 @@ That's it! Just configure your settings as you see fit, and you're on your way t
 No, you can use a Standard PayPal account.
 
 == Changelog ==
+
+= 3.8 =
+* The problem of not sending an email confirmation when the payment is canceled has been successfully resolved.
 
 = 3.7 =
 * Test - Checking with Latest wordPress and Contact form 7, Tested and works fine.
