@@ -135,13 +135,13 @@ if ( !class_exists( 'CF7PE' ) ) {
 						'<strong>' .
 							sprintf(
 								/* translators: Accept PayPal Payments using Contact Form 7 */
-								__( 'Thank you for activating %s', 'accept-paypal-payments-using-contact-form-7' ),
+								wp_kses( 'Thank you for activating %s', 'accept-paypal-payments-using-contact-form-7' ),
 								'Accept PayPal Payments using Contact Form 7'
 							) .
 						'</strong>.<br/>' .
 						sprintf(
 							/* translators: Accept PayPal Payments using Contact Form 7 PRO */
-							__( 'It looks like you had PRO version %s of this plugin activated. To avoid conflicts the extra version has been deactivated and we recommend you delete it.', 'accept-paypal-payments-using-contact-form-7' ),
+							wp_kses( 'It looks like you had PRO version %s of this plugin activated. To avoid conflicts the extra version has been deactivated and we recommend you delete it.', 'accept-paypal-payments-using-contact-form-7' ),
 							'<strong>(<em>Accept PayPal Payments using Contact Form 7 PRO</em>)</strong>'
 						) .
 					'</p>' .
@@ -155,7 +155,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 				'<p>' .
 					sprintf(
 						/* translators: Accept PayPal Payments using Contact Form 7 */
-						__( '<p><strong><a href="https://wordpress.org/plugins/contact-form-7/" target="_blank">Contact Form 7</a></strong> is required to use <strong>%s</strong>.</p>', 'accept-paypal-payments-using-contact-form-7' ),
+						wp_kses( '<p><strong><a href="https://wordpress.org/plugins/contact-form-7/" target="_blank">Contact Form 7</a></strong> is required to use <strong>%s</strong>.</p>', 'accept-paypal-payments-using-contact-form-7' ),
 						'Accept PayPal Payments using Contact Form 7'
 					) .
 				'</p>' .
