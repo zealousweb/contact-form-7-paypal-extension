@@ -6,11 +6,11 @@ Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
 Tested up to: 6.5
 Requires PHP: 5.6
-Stable tag: 3.8
+Stable tag: 3.9
 License: GPLv3 or later License
 CF7 requires at least: 3.0
 CF7 tested up to: 5.8
-Version: 3.8
+Version: 3.9
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Integrate PayPal Submit button in Contact Form 7 to Enjoy Quick Online Payments.
@@ -29,6 +29,7 @@ You can make the payment once and all as there is no recurring payment option.  
 * Accepts dynamic value from frontend for parameters like item description, amount and quantity.
 * ‘Sandbox’ testing option available to ensure proper functioning.
 * ‘Return URL’ and ‘Cancel URL’ options for payment success and cancellation facility.
+* Compatibility of WordPress VIP.
 
 = Features of Accept PayPal Payments Using Contact Form 7 Pro =
 
@@ -96,6 +97,9 @@ That's it! Just configure your settings as you see fit, and you're on your way t
 No, you can use a Standard PayPal account.
 
 == Changelog ==
+
+= 3.9 =
+* Improved compatibility with WordPress VIP platform by refactoring code to adhere to VIP coding standards.
 
 = 3.8 =
 * The problem of not sending an email confirmation when the payment is canceled has been successfully resolved.
