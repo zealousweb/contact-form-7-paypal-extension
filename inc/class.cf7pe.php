@@ -57,6 +57,45 @@ if ( !class_exists( 'CF7PE' ) ) {
 			}
             // Load Paypal SDK on int action
 			require __DIR__ . '/lib/sdk/autoload.php';
+
+
+			/**
+			 * Post Type: paypal Add-on.
+			 */
+
+			 $labels = array(
+				'name' => __( 'paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
+				'singular_name' => __( 'paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
+			);
+
+			$args = array(
+				'label' => __( 'paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
+				'labels' => $labels,
+				'description' => '',
+				'public' => false,
+				'publicly_queryable' => false,
+				'show_ui' => true,
+				'delete_with_user' => false,
+				'show_in_rest' => false,
+				'rest_base' => '',
+				'has_archive' => false,
+				'show_in_menu' => 'wpcf7',
+				'show_in_nav_menus' => false,
+				'exclude_from_search' => true,
+				'capability_type' => 'post',
+				'capabilities' => array(
+					'read' => true,
+					'create_posts'  => false,
+					'publish_posts' => false,
+				),
+				'map_meta_cap' => true,
+				'hierarchical' => false,
+				'rewrite' => false,
+				'query_var' => false,
+				'supports' => array( 'title' ),
+			);
+
+			register_post_type( 'cf7pl_data', $args );
 		}
 
 		/**
@@ -136,7 +175,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 							sprintf(
 								/* translators: Accept PayPal Payments using Contact Form 7 */
 								wp_kses( 'Thank you for activating %s', 'accept-paypal-payments-using-contact-form-7' ),
-								'Accept PayPal Payments using Contact Form 7'
+								'Accept PayPal Payments using Contact Form 7- Paypal Add-on'
 							) .
 						'</strong>.<br/>' .
 						sprintf(
@@ -156,7 +195,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 					sprintf(
 						/* translators: Accept PayPal Payments using Contact Form 7 */
 						wp_kses( '<p><strong><a href="https://wordpress.org/plugins/contact-form-7/" target="_blank">Contact Form 7</a></strong> is required to use <strong>%s</strong>.</p>', 'accept-paypal-payments-using-contact-form-7' ),
-						'Accept PayPal Payments using Contact Form 7'
+						'Accept PayPal Payments using Contact Form 7 - Paypal Add-on'
 					) .
 				'</p>' .
 			'</div>';

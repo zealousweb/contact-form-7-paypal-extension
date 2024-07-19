@@ -400,7 +400,33 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					wp_redirect( $payment->getApprovalLink() );
 					exit;
 				}
+				$sa_post_id = wp_insert_post( array (
+					'post_type' => 'cf7pl_data',
+					'post_title' => ( !empty( $email ) ? $email : $invoice_no ), // email/invoice_no
+					'post_status' => 'publish',
+					'comment_status' => 'closed',
+					'ping_status' => 'closed',
+				) );
 
+				if ( !empty( $sa_post_id ) ) {
+
+					$stored_data = $posted_data;
+					unset( $stored_data['stripeClientSecret'] );
+
+					add_post_meta( $sa_post_id, '_form_id', $form_ID );
+					add_post_meta( $sa_post_id, '_email', $email );
+					add_post_meta( $sa_post_id, '_transaction_id', $txn_id );
+					add_post_meta( $sa_post_id, '_invoice_no', $invoice_no );
+					add_post_meta( $sa_post_id, '_amount', $amount_val );
+					add_post_meta( $sa_post_id, '_quantity', $quanity_val );
+					add_post_meta( $sa_post_id, '_total', ($paidAmount/100) );
+					//add_post_meta( $sa_post_id, '_request_Ip', $this->getUserIpAddr() );
+					add_post_meta( $sa_post_id, '_currency', $paidCurrency );
+					add_post_meta( $sa_post_id, '_form_data', serialize( $stored_data ) );
+					add_post_meta( $sa_post_id, '_transaction_response', json_encode( $charge ) );
+					add_post_meta( $sa_post_id, '_transaction_status', $payment_status );
+					add_post_meta( $sa_post_id, '_attachment', $attachent );
+				}
 
 			}
 

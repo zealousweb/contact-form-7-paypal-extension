@@ -54,6 +54,10 @@ if ( !defined( 'CF7PE_PREFIX' ) ) {
 	define( 'CF7PE_PREFIX', 'cf7pe' ); // Plugin prefix
 }
 
+if ( !defined( 'CF7PE_PRODUCT' ) ) {
+	define( 'CF7PE_PRODUCT', 'https://www.zealousweb.com/wordpress-plugins/accept-stripe-payments-using-contact-form-7/' );
+}
+
 /**
  * Initialize the main class
  */

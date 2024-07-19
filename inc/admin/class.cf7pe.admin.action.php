@@ -25,6 +25,8 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 			// Save settings of contact form 7 admin
 			add_action( 'wpcf7_save_contact_form', array( $this, 'action__wpcf7_save_contact_form' ), 20, 2 );
+			add_action( 'manage_cf7sa_data_posts_custom_column', array( $this, 'action__manage_cf7sa_data_posts_custom_column' ), 10, 2 );
+			add_action( 'restrict_manage_posts', array( $this, 'action__restrict_manage_posts' ) );
 
 		}
 
@@ -77,6 +79,102 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 		}
 
+         /**
+		 * Action: manage_cf7sa_data_posts_custom_column
+		 *
+		 * @method action__manage_cf7sa_data_posts_custom_column
+		 *
+		 * @param  string  $column
+		 * @param  int     $post_id
+		 *
+		 * @return string
+		 */
+		function action__manage_cf7sa_data_posts_custom_column( $column, $post_id ) {
+			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post_id ) );
+			switch ( $column ) {
+
+				case 'form_id' :
+					if( $data_ct ){
+							echo "<a href='".CF7PE_PRODUCT."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
+					}else{
+						echo (
+							!empty( get_post_meta( $post_id , '_form_id', true ) )
+							? (
+								!empty( get_the_title( get_post_meta( $post_id , '_form_id', true ) ) )
+								? get_the_title( get_post_meta( $post_id , '_form_id', true ) )
+								: get_post_meta( $post_id , '_form_id', true )
+							)
+							: ''
+						);
+					}					
+				break;
+
+				case 'transaction_status' :
+					if( $data_ct ){
+							echo "<a href='".CF7PE_PRODUCT."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
+					}else{
+						echo (
+							!empty( get_post_meta( $post_id , '_transaction_status', true ) )
+							? ucfirst( get_post_meta( $post_id , '_transaction_status', true ) )
+							: ''
+						);
+					}
+				break;
+
+				case 'total' :
+					if( $data_ct ){
+							echo "<a href='".CF7PE_PRODUCT."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
+					}else{
+
+						echo ( !empty( get_post_meta( $post_id , '_total', true ) ) ? get_post_meta( $post_id , '_total', true ) : '' ) .' ' .
+							( !empty( get_post_meta( $post_id , '_currency', true ) ) ? strtoupper( get_post_meta( $post_id , '_currency', true ) ) : '' );
+					}
+				break;
+
+			}
+		}
+
+		/**
+		 * Action: restrict_manage_posts
+		 *
+		 * - Used to creat filter by form and export functionality.
+		 *
+		 * @method action__restrict_manage_posts
+		 *
+		 * @param  string $post_type
+		 */
+		function action__restrict_manage_posts( $post_type ) {
+
+			if ( 'cf7pl_data' != $post_type ) {
+				return;
+			}
+
+			$posts = get_posts(
+				array(
+					'post_type'        => 'wpcf7_contact_form',
+					'post_status'      => 'publish',
+					'suppress_filters' => false,
+					'posts_per_page'   => -1
+				)
+			);
+
+			if ( empty( $posts ) ) {
+				return;
+			}
+
+			$selected = ( isset( $_GET['form-id'] ) ? sanitize_text_field($_GET['form-id']) : '' );
+
+			echo '<select name="form-id" id="form-id">';
+			echo '<option value="all">' . __( 'All Forms', 'contact-form-7-stripe-addon' ) . '</option>';
+			foreach ( $posts as $post ) {
+				echo '<option value="' . $post->ID . '" ' . selected( $selected, $post->ID, false ) . '>' . $post->post_title  . '</option>';
+			}
+			echo '</select>';
+
+			echo '<input type="submit" id="doaction2" name="export_csv" class="button action" value="Export CSV">';
+
+		}
+		
 		/*
 		######## ##     ## ##    ##  ######  ######## ####  #######  ##    ##  ######
 		##       ##     ## ###   ## ##    ##    ##     ##  ##     ## ###   ## ##    ##
