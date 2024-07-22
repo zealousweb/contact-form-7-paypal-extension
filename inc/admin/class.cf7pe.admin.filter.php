@@ -24,8 +24,8 @@ if ( !class_exists( 'CF7PE_Admin_Filter' ) ) {
 			// Adding Paypal tab
 			add_filter( 'wpcf7_editor_panels', array( $this, 'filter__wpcf7_editor_panels' ), 10, 3 );
 			add_filter( 'post_row_actions',    array( $this, 'filter__post_row_actions' ), 10, 3 );
-			add_filter( 'manage_edit-cf7sa_data_sortable_columns', array( $this, 'filter__manage_cf7sa_data_sortable_columns' ), 10, 3 );
-			add_filter( 'manage_cf7sa_data_posts_columns',         array( $this, 'filter__manage_cf7sa_data_posts_columns' ), 10, 3 );
+			add_filter( 'manage_edit-cf7pl_data_sortable_columns', array( $this, 'filter__manage_cf7pl_data_sortable_columns' ), 10, 3 );
+			add_filter( 'manage_cf7pl_data_posts_columns',         array( $this, 'filter__manage_cf7pl_data_posts_columns' ), 10, 3 );
 
 		}
 
@@ -76,17 +76,17 @@ if ( !class_exists( 'CF7PE_Admin_Filter' ) ) {
 			return $actions;
 		}
 	/**
-		 * Filter: manage_edit-cf7sa_data_sortable_columns
+		 * Filter: manage_edit-cf7pl_data_sortable_columns
 		 *
-		 * - Used to add the sortable fields into "cf7sa_data" CPT
+		 * - Used to add the sortable fields into "cf7pl_data" CPT
 		 *
-		 * @method filter__manage_cf7sa_data_sortable_columns
+		 * @method filter__manage_cf7pl_data_sortable_columns
 		 *
 		 * @param  array $columns
 		 *
 		 * @return array
 		 */
-		function filter__manage_cf7sa_data_sortable_columns( $columns ) {
+		function filter__manage_cf7pl_data_sortable_columns( $columns ) {
 			$columns['form_id'] = '_form_id';
 			$columns['transaction_status'] = '_transaction_status';
 			$columns['total'] = '_total';
@@ -94,17 +94,17 @@ if ( !class_exists( 'CF7PE_Admin_Filter' ) ) {
 		}
 
 		/**
-		 * Filter: manage_cf7sa_data_posts_columns
+		 * Filter: manage_cf7pl_data_posts_columns
 		 *
-		 * - Used to add new column fields for the "cf7sa_data" CPT
+		 * - Used to add new column fields for the "cf7pl_data" CPT
 		 *
-		 * @method filter__manage_cf7sa_data_posts_columns
+		 * @method filter__manage_cf7pl_data_posts_columns
 		 *
 		 * @param  array $columns
 		 *
 		 * @return array
 		 */
-		function filter__manage_cf7sa_data_posts_columns( $columns ) {
+		function filter__manage_cf7pl_data_posts_columns( $columns ) {
 			unset( $columns['date'] );
 			$columns['form_id'] = __( 'Form ID', 'accept-paypal-payments-using-contact-form-7' );
 			$columns['transaction_status'] = __( 'Transaction Status', 'accept-paypal-payments-using-contact-form-7' );
@@ -114,17 +114,17 @@ if ( !class_exists( 'CF7PE_Admin_Filter' ) ) {
 		}
 
 		/**
-		 * Filter: bulk_actions-edit-cf7sa_data
+		 * Filter: bulk_actions-edit-cf7pl_data
 		 *
-		 * - Add/Remove bulk actions for "cf7sa_data" CPT
+		 * - Add/Remove bulk actions for "cf7pl_data" CPT
 		 *
-		 * @method filter__bulk_actions_edit_cf7sa_data
+		 * @method filter__bulk_actions_edit_cf7pl_data
 		 *
 		 * @param  array $actions
 		 *
 		 * @return array
 		 */
-		function filter__bulk_actions_edit_cf7sa_data( $actions ) {
+		function filter__bulk_actions_edit_cf7pl_data( $actions ) {
 			unset( $actions['edit'] );
 			return $actions;
 		}

@@ -22,12 +22,149 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		function __construct()  {
 
 			add_action( 'init',  array( $this, 'action__init' ) );
-
+			add_action( 'init',  array( $this, 'action__init_99' ), 99 );
+			add_action( 'add_meta_boxes', array( $this, 'action__add_meta_boxes' ) );
 			// Save settings of contact form 7 admin
 			add_action( 'wpcf7_save_contact_form', array( $this, 'action__wpcf7_save_contact_form' ), 20, 2 );
-			add_action( 'manage_cf7sa_data_posts_custom_column', array( $this, 'action__manage_cf7sa_data_posts_custom_column' ), 10, 2 );
+			add_action( 'manage_cf7pl_data_posts_custom_column', array( $this, 'action__manage_cf7pl_data_posts_custom_column' ), 10, 2 );
 			add_action( 'restrict_manage_posts', array( $this, 'action__restrict_manage_posts' ) );
+			
+			
 
+		}
+
+			/**
+		 * Action: init 99
+		 *
+		 * - Used to perform the CSV export functionality.
+		 *
+		 */
+		function action__init_99() {
+			if (
+				   isset( $_REQUEST['export_csv'] )
+				&& isset( $_REQUEST['form-id'] )
+				&& !empty( $_REQUEST['form-id'] )
+			) {
+				$form_id = sanitize_text_field($_REQUEST['form-id']);
+
+				if ( 'all' == $form_id ) {
+					add_action( 'admin_notices', array( $this, 'action__admin_notices_export' ) );
+					return;
+				}
+
+				$args = array(
+					'post_type' => 'cf7pl_data',
+					'posts_per_page' => -1
+				);
+
+				$exported_data = get_posts( $args );
+
+				if ( empty( $exported_data ) )
+					return;
+
+				/** CSV Export **/
+				$filename = 'cf7pl-' . $form_id . '-' . time() . '.csv';
+
+				$header_row = array(
+					'_form_id'            => 'Form ID/Name',
+					'_email'              => 'Email Address',
+					'_transaction_id'     => 'Transaction ID',
+					'_invoice_no'         => 'Invoice ID',
+					'_amount'             => 'Amount',
+					'_quantity'           => 'Quantity',
+					'_total'              => 'Total',
+					'_currency'           => 'Currency code',
+					'_submit_time'        => 'Submit Time',
+					'_request_Ip'         => 'Request IP',
+					'_transaction_status' => 'Transaction status'
+				);
+
+				$data_rows = array();
+
+				if ( !empty( $exported_data ) ) {
+					foreach ( $exported_data as $entry ) {
+
+						$row = array();
+
+						if ( !empty( $header_row ) ) {
+							foreach ( $header_row as $key => $value ) {
+
+								if (
+									   $key != '_transaction_status'
+									&& $key != '_submit_time'
+								) {
+
+									$row[$key] = __(
+										(
+											(
+												'_form_id' == $key
+												&& !empty( get_the_title( get_post_meta( $entry->ID, $key, true ) ) )
+											)
+											? get_the_title( get_post_meta( $entry->ID, $key, true ) )
+											: get_post_meta( $entry->ID, $key, true )
+										)
+									);
+
+								} else if ( $key == '_transaction_status' ) {
+
+									$row[$key] = __(
+										get_post_meta( $entry->ID , $key, true )
+									);
+
+								} else if ( '_submit_time' == $key ) {
+									$row[$key] = __( get_the_date( 'd, M Y H:i:s', $entry->ID ) );
+								}
+							}
+						}
+
+						/* form_data */
+						$data = unserialize( get_post_meta( $entry->ID, '_form_data', true ) );
+						$hide_data = apply_filters( CF7PE_PREFIX . '/hide-display', array( '_wpcf7', '_wpcf7_version', '_wpcf7_locale', '_wpcf7_unit_tag', '_wpcf7_container_post' ) );
+						foreach ( $hide_data as $key => $value ) {
+							if ( array_key_exists( $value, $data ) ) {
+								unset( $data[$value] );
+							}
+						}
+
+						if ( !empty( $data ) ) {
+							foreach ( $data as $key => $value ) {
+								if ( strpos( $key, 'stripe-' ) === false ) {
+
+									if ( !in_array( $key, $header_row ) ) {
+										$header_row[$key] = $key;
+									}
+
+									$row[$key] = __( is_array( $value ) ? implode( ', ', $value ) : $value );
+
+								}
+							}
+						}
+
+						$data_rows[] = $row;
+
+					}
+				}
+
+				ob_start();
+
+				$fh = @fopen( 'php://output', 'w' );
+				fprintf( $fh, chr(0xEF) . chr(0xBB) . chr(0xBF) );
+				header( 'Cache-Control: must-revalidate, post-check=0, pre-check=0' );
+				header( 'Content-Description: File Transfer' );
+				header( 'Content-type: text/csv' );
+				header( "Content-Disposition: attachment; filename={$filename}" );
+				header( 'Expires: 0' );
+				header( 'Pragma: public' );
+				fputcsv( $fh, $header_row );
+				foreach ( $data_rows as $data_row ) {
+					fputcsv( $fh, $data_row );
+				}
+				fclose( $fh );
+
+				ob_end_flush();
+				die();
+
+			}
 		}
 
 		/*
@@ -42,6 +179,16 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		function action__init() {
 			wp_register_script( CF7PE_PREFIX . '_admin_js', CF7PE_URL . 'assets/js/admin.min.js', array( 'jquery-core' ), CF7PE_VERSION );
 			wp_register_style( CF7PE_PREFIX . '_admin_css', CF7PE_URL . 'assets/css/admin.min.css', array(), CF7PE_VERSION );
+		}
+
+		/**
+		 * Action: add_meta_boxes
+		 *
+		 * - Add mes boxes for the CPT "cf7sa_data"
+		 */
+		function action__add_meta_boxes() {
+			add_meta_box( 'cfpe-data', __( 'From Data', 'accept-paypal-payments-using-contact-form-7' ), array( $this, 'cfpe_show_from_data' ), 'cf7pl_data', 'normal', 'high' );
+			add_meta_box( 'cfpe-help', __( 'Do you need help for configuration?', 'accept-paypal-payments-using-contact-form-7' ), array( $this, 'cfpe_show_help_data' ), 'cf7pl_data', 'side', 'high' );
 		}
 
 		/**
@@ -80,17 +227,19 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		}
 
          /**
-		 * Action: manage_cf7sa_data_posts_custom_column
+		 * Action: manage_cf7pl_data_posts_custom_column
 		 *
-		 * @method action__manage_cf7sa_data_posts_custom_column
+		 * @method action__manage_cf7pl_data_posts_custom_column
 		 *
 		 * @param  string  $column
 		 * @param  int     $post_id
 		 *
 		 * @return string
 		 */
-		function action__manage_cf7sa_data_posts_custom_column( $column, $post_id ) {
+		function action__manage_cf7pl_data_posts_custom_column( $column, $post_id ) {
+				//print_r($column);die();
 			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post_id ) );
+			
 			switch ( $column ) {
 
 				case 'form_id' :
@@ -135,6 +284,19 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		}
 
 		/**
+		* check data ct
+		*/
+		function cfsazw_check_data_ct( $post_id ){
+			$data = unserialize( get_post_meta( $post_id, '_form_data', true ) );
+			if( !empty( get_post_meta( $post_id, '_form_data', true ) ) && isset( $data['_exceed_num_cfsazw'] ) && !empty( $data['_exceed_num_cfsazw'] ) ){
+				return $data['_exceed_num_cfsazw'];
+			}else{
+				return '';
+			}
+
+		}
+
+		/**
 		 * Action: restrict_manage_posts
 		 *
 		 * - Used to creat filter by form and export functionality.
@@ -165,7 +327,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			$selected = ( isset( $_GET['form-id'] ) ? sanitize_text_field($_GET['form-id']) : '' );
 
 			echo '<select name="form-id" id="form-id">';
-			echo '<option value="all">' . __( 'All Forms', 'contact-form-7-stripe-addon' ) . '</option>';
+			echo '<option value="all">' . __( 'All Forms', 'accept-paypal-payments-using-contact-form-7' ) . '</option>';
 			foreach ( $posts as $post ) {
 				echo '<option value="' . $post->ID . '" ' . selected( $selected, $post->ID, false ) . '>' . $post->post_title  . '</option>';
 			}
@@ -185,10 +347,181 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		##        #######  ##    ##  ######     ##    ####  #######  ##    ##  ######
 		*/
 
+		/**
+		 * - Used to display the form data in CPT detail page.
+		 *
+		 * @method cfsa_show_from_data
+		 *
+		 * @param  object $post WP_Post
+		 */
+		function cfpe_show_from_data( $post ) {
+			//print_r($post);
+			$fields = CF7PE()->lib->data_fields;
 
+			$form_id = get_post_meta( $post->ID, '_form_id', true );
+			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post->ID ) );
+
+			echo '<table class="cf7sa-box-data form-table">' .
+				'<style>.inside-field td, .inside-field th{ padding-top: 5px; padding-bottom: 5px;} .postbox table.form-table{ word-break: break-all; }</style>';
+
+				if ( !empty( $fields ) ) {
+
+					if( $data_ct ){
+
+						echo'<tr class="inside-field"><th scope="row">You are using Accept Stripe Payments Using Contact Form 7 - no license needed. Enjoy! 🙂</th></tr>';
+							echo'<tr class="inside-field"><th scope="row"><a href="https://www.zealousweb.com/wordpress-plugins/accept-stripe-payments-using-contact-form-7/" target="_blank">To unlock more features consider upgrading to PRO.</a></th></tr>';
+
+					}else{
+
+						if ( array_key_exists( '_transaction_response', $fields ) && empty( get_post_meta( $form_id, CF7PE_META_PREFIX . 'debug', true ) ) ) {
+							unset( $fields['_transaction_response'] );
+						}
+
+						//$attachment = ( !empty( get_post_meta( $post->ID, '_attachment', true ) ) ? unserialize( get_post_meta( $post->ID, '_attachment', true ) ) : '' );
+						$attachment = ( !empty( get_post_meta( $post->ID, '_attachment', true ) ) ? '' : '' );
+						$root_path = get_home_path();
+
+						foreach ( $fields as $key => $value ) {
+
+							if (
+								!empty( get_post_meta( $post->ID, $key, true ) )
+								&& $key != '_form_data'
+								&& $key != '_transaction_response'
+								&& $key != '_transaction_status'
+							) {
+
+								$val = get_post_meta( $post->ID, $key, true );
+
+								echo '<tr class="form-field">' .
+									'<th scope="row">' .
+										'<label for="hcf_author">' . __( sprintf( '%s', $value ), 'accept-paypal-payments-using-contact-form-7' ) . '</label>' .
+									'</th>' .
+									'<td>' .
+										(
+											(
+												'_form_id' == $key
+												&& !empty( get_the_title( get_post_meta( $post->ID, $key, true ) ) )
+											)
+											? get_the_title( get_post_meta( $post->ID, $key, true ) )
+											: get_post_meta( $post->ID, $key, true )
+										) .
+									'</td>' .
+								'</tr>';
+
+							} else if (
+								!empty( get_post_meta( $post->ID, $key, true ) )
+								&& $key == '_transaction_status'
+							) {
+
+								echo '<tr class="form-field">' .
+									'<th scope="row">' .
+										'<label for="hcf_author">' . __( sprintf( '%s', $value ), 'accept-paypal-payments-using-contact-form-7' ) . '</label>' .
+									'</th>' .
+									'<td>' .
+										ucfirst( get_post_meta( $post->ID , $key, true ) ) .
+									'</td>' .
+								'</tr>';
+
+							} else if (
+								!empty( get_post_meta( $post->ID, $key, true ) )
+								&& $key == '_form_data'
+							) {
+
+								echo '<tr class="form-field">' .
+									'<th scope="row">' .
+										'<label for="hcf_author">' . __( sprintf( '%s', $value ), 'accept-paypal-payments-using-contact-form-7' ) . '</label>' .
+									'</th>' .
+									'<td>' .
+										'<table>';
+
+											$data = unserialize( get_post_meta( $post->ID, $key, true ) );
+											$hide_data = apply_filters( CF7PE_PREFIX . '/hide-display', array( '_wpcf7', '_wpcf7_version', '_wpcf7_locale', '_wpcf7_unit_tag', '_wpcf7_container_post' ) );
+											foreach ( $hide_data as $key => $value ) {
+												if ( array_key_exists( $value, $data ) ) {
+													unset( $data[$value] );
+												}
+											}
+
+											if ( !empty( $data ) ) {
+												foreach ( $data as $key => $value ) {
+													if ( strpos( $key, 'stripe-' ) === false ) {
+														echo '<tr class="inside-field">' .
+															'<th scope="row">' .
+																__( sprintf( '%s', $key ), 'accept-paypal-payments-using-contact-form-7' ) .
+															'</th>' .
+															'<td>' .
+																(
+																	(
+																		!empty( $attachment )
+																		&& array_key_exists( $key, $attachment )
+																	)
+																	? '<a href="' . esc_url( home_url( str_replace( $root_path, '/', $attachment[$key] ) ) ) . '" target="_blank" download>' . __( sprintf( '%s', $value ), 'accept-paypal-payments-using-contact-form-7' ) . '</a>'
+																	: __( sprintf( '%s', ( is_array( $value ) ? implode( ', ', $value ) : $value ) ), 'accept-paypal-payments-using-contact-form-7' )
+																) .
+															'</td>' .
+														'</tr>';
+													}
+												}
+											}
+
+										echo '</table>' .
+									'</td>
+								</tr>';
+
+							} else if (
+								!empty( get_post_meta( $post->ID, $key, true ) )
+								&& $key == '_transaction_response'
+							) {
+
+								echo '<tr class="form-field">' .
+									'<th scope="row">' .
+										'<label for="hcf_author">' . __( sprintf( '%s', $value ), 'contact-form-7-authorize-net-addon' ) . '</label>' .
+									'</th>' .
+									'<td>' .
+										'<code style="word-break: break-all;">' .
+											(
+												get_post_meta( $post->ID , $key, true )
+											) .
+										'</code>' .
+									'</td>' .
+								'</tr>';
+
+							}
+
+
+						}
+
+					}
+
+					
+				}
+
+			echo '</table>';
+		}
+
+
+	
+
+		/**
+		 * - Used to add meta box in CPT detail page.
+		 */
+		function cfpe_show_help_data() {
+			echo '<div id="cf7sa-data-help">' .
+				apply_filters(
+					CF7PE_PREFIX . '/help/cf7pl_data/postbox',
+					'<ol>' .
+						'<li><a href="https://www.zealousweb.com/documentation/accept-paypal-payments-using-contact-form-7/" target="_blank">Refer the document.</a></li>' .
+						'<li><a href="https://www.zealousweb.com/contact/" target="_blank">Contact Us</a></li>' .
+						'<li><a href="mailto:opensource@zealousweb.in">Email us</a></li>' .
+					'</ol>'
+				) .
+			'</div>';
+		}
 	}
 
 	add_action( 'plugins_loaded' , function() {
 		CF7PE()->admin->action = new CF7PE_Admin_Action;
 	} );
 }
+
+

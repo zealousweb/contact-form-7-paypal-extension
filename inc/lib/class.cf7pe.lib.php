@@ -31,6 +31,22 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 
 	class CF7PE_Lib {
 
+		var $data_fields = array(
+			'_form_id'              => 'Form ID/Name',
+			'_email'                => 'Email Address',
+			'_transaction_id'       => 'Transaction ID',
+			'_invoice_no'           => 'Invoice ID',
+			'_amount'               => 'Amount',
+			'_quantity'             => 'Quantity',
+			'_total'                => 'Total',
+			'_submit_time'          => 'Submit Time',
+			'_request_Ip'           => 'Request IP',
+			'_currency'             => 'Currency code',
+			'_form_data'            => 'Form data',
+			'_transaction_response' => 'Transaction response',
+			'_transaction_status'   => 'Transaction status',
+		);
+		
 		var $context = '';
 
 		function __construct() {
@@ -76,7 +92,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				&& isset( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 				&& !empty( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 			) {
-
+				
 				$from_data = unserialize( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] );
 				$form_ID = $from_data->get_contact_form()->id();
 
@@ -105,7 +121,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				&& isset( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 				&& !empty( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 			) {
-
+				
+				
 				$from_data = unserialize( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] );
 				$form_ID = $from_data->get_contact_form()->id();
 
@@ -121,6 +138,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					$live_client_id         = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'live_client_id', true );
 					$live_client_secret     = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'live_client_secret', true );
 					$currency               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
+					
 				}
 
 				$paypalConfig = [
@@ -203,6 +221,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					$this->zw_remove_uploaded_files( $this->get_form_attachments( $form_ID ) );
 				}
 
+				
+
 			}
 		}
 
@@ -222,6 +242,59 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			}
 
 		}
+/**
+		 * Get the attachment upload directory from plugin.
+		 *
+		 * @method zw_wpcf7_upload_tmp_dir
+		 *
+		 * @return string
+		 */
+		function zw_wpcf7_upload_tmp_dir() {
+
+			$upload = wp_upload_dir();
+			$upload_dir = $upload['basedir'];
+			$cf7sa_upload_dir = $upload_dir . '/cf7sa-uploaded-files';
+
+			if ( !is_dir( $cf7sa_upload_dir ) ) {
+				mkdir( $cf7sa_upload_dir, 0400 );
+			}
+
+			return $cf7sa_upload_dir;
+		}
+
+		/**
+		 * Copy the attachment into the plugin folder.
+		 *
+		 * @method zw_cf7_upload_files
+		 *
+		 * @param  array $attachment
+		 *
+		 * @uses $this->zw_wpcf7_upload_tmp_dir(), WPCF7::wpcf7_maybe_add_random_dir()
+		 *
+		 * @return array
+		 */
+		function zw_cf7_upload_files( $attachment ) {
+			if ( empty( $attachment ) || $attachment === "" ) {
+				return;
+			}
+			$new_attachment = $attachment;
+			foreach ( $attachment as $key => $value ) {
+				// Check if $value is a non-empty string before proceeding
+				if ( is_string( $value ) && $value !== "" ) {
+					$tmp_name = $value;
+					$uploads_dir = wpcf7_maybe_add_random_dir( $this->zw_wpcf7_upload_tmp_dir() );
+					$new_file = path_join( $uploads_dir, end( explode( '/', $value ) ) );
+		
+					if ( copy( $value, $new_file ) ) {
+						chmod( $new_file, 0400 );
+						$new_attachment[$key] = $new_file;
+					}
+				}
+			}
+		
+			return $new_attachment;
+		}
+
 
 		/**
 		 * Action: CF7 before send email
@@ -259,10 +332,12 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$description            = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'description', true );
 				$success_returnURL      = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'success_returnurl', true );
 				$cancle_returnURL       = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'cancel_returnurl', true );
-
+				$mail                  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
 				// Set some example data for the payment.
 				$currency               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
 
+				// $mail       = ( ( !empty( $mail ) && array_key_exists( $mail, $posted_data ) ) ? $posted_data[$mail] : '' );
+				// $description = ( ( !empty( $description ) && array_key_exists( $description, $posted_data ) ) ? $posted_data[$description] : get_bloginfo( 'name' ) );
 				add_filter( 'wpcf7_skip_mail', array( $this, 'filter__wpcf7_skip_mail' ), 20 );
 
 				$amount_val  = ( ( !empty( $amount ) && array_key_exists( $amount, $posted_data ) ) ? floatval( $posted_data[$amount] ) : '0' );
@@ -402,7 +477,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				}
 				$sa_post_id = wp_insert_post( array (
 					'post_type' => 'cf7pl_data',
-					'post_title' => ( !empty( $email ) ? $email : $invoice_no ), // email/invoice_no
+					'post_title' => ( !empty( $mail ) ? $mail : $invoiceNumber ), // email/invoice_no
 					'post_status' => 'publish',
 					'comment_status' => 'closed',
 					'ping_status' => 'closed',
@@ -411,21 +486,22 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				if ( !empty( $sa_post_id ) ) {
 
 					$stored_data = $posted_data;
-					unset( $stored_data['stripeClientSecret'] );
+					//unset( $stored_data['contact_form_id'] );
+					//unset( $stored_data['stripeClientSecret'] );
 
 					add_post_meta( $sa_post_id, '_form_id', $form_ID );
-					add_post_meta( $sa_post_id, '_email', $email );
-					add_post_meta( $sa_post_id, '_transaction_id', $txn_id );
-					add_post_meta( $sa_post_id, '_invoice_no', $invoice_no );
+					add_post_meta( $sa_post_id, '_email', $mail );
+					add_post_meta( $sa_post_id, '_transaction_id', $data );
+					add_post_meta( $sa_post_id, '_invoice_no', $invoiceNumber );
 					add_post_meta( $sa_post_id, '_amount', $amount_val );
 					add_post_meta( $sa_post_id, '_quantity', $quanity_val );
-					add_post_meta( $sa_post_id, '_total', ($paidAmount/100) );
+					add_post_meta( $sa_post_id, '_total', ($amountPayable/100) );
 					//add_post_meta( $sa_post_id, '_request_Ip', $this->getUserIpAddr() );
-					add_post_meta( $sa_post_id, '_currency', $paidCurrency );
+					add_post_meta( $sa_post_id, '_currency', $currency );
 					add_post_meta( $sa_post_id, '_form_data', serialize( $stored_data ) );
-					add_post_meta( $sa_post_id, '_transaction_response', json_encode( $charge ) );
-					add_post_meta( $sa_post_id, '_transaction_status', $payment_status );
-					add_post_meta( $sa_post_id, '_attachment', $attachent );
+					add_post_meta( $sa_post_id, '_transaction_response', json_encode( $payment ) );
+					//add_post_meta( $sa_post_id, '_transaction_status', $payment );
+					add_post_meta( $sa_post_id, '_attachment', $attachment );
 				}
 
 			}
@@ -562,63 +638,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			return $apiContext;
 		}
 
-		/**
-		 * Copy the attachment into the plugin folder.
-		 *
-		 * @method zw_cf7_upload_files
-		 *
-		 * @param  array $attachment
-		 *
-		 * @uses $this->zw_wpcf7_upload_tmp_dir(), WPCF7::wpcf7_maybe_add_random_dir()
-		 *
-		 * @return array
-		 */
-		function zw_cf7_upload_files( $attachment, $version ) {
-
-			if( empty( $attachment ) )
-			return;
-
-			$new_attachment = $attachment;
-
-			foreach ( $attachment as $key => $value ) {
-				$tmp_name = $value;
-				$uploads_dir = wpcf7_maybe_add_random_dir( $this->zw_wpcf7_upload_tmp_dir() );
-				foreach ($tmp_name as $newkey => $file_path) {
-					$get_file_name = explode( '/', $file_path );
-					$new_uploaded_file = path_join( $uploads_dir, end( $get_file_name ) );
-					if ( copy( $file_path, $new_uploaded_file ) ) {
-						chmod( $new_uploaded_file, 0755 );
-						if($version == 'old'){
-							$new_attachment_file[$newkey] = $new_uploaded_file;
-						}else{
-							$new_attachment_file[$key] = $new_uploaded_file;
-						}
-					}
-				}
-			}
-			return $new_attachment_file;
-		}
-
-		/**
-		 * Get the attachment upload directory from plugin.
-		 *
-		 * @method zw_wpcf7_upload_tmp_dir
-		 *
-		 * @return string
-		 */
-		function zw_wpcf7_upload_tmp_dir() {
-
-            $upload = wp_upload_dir();
-            $upload_dir = $upload['basedir'];
-            $cf7pe_upload_dir = $upload_dir . '/cf7pe-uploaded-files';
-
-            if (! is_dir( $cf7pe_upload_dir ) ) {
-                mkdir( $cf7pe_upload_dir, 0755 );
-            }
-
-            return $cf7pe_upload_dir;
-		}
-
+	
 		/**
 		 * Email send
 		 *
