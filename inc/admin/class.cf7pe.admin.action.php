@@ -26,7 +26,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			add_action( 'add_meta_boxes', array( $this, 'action__add_meta_boxes' ) );
 			// Save settings of contact form 7 admin
 			add_action( 'wpcf7_save_contact_form', array( $this, 'action__wpcf7_save_contact_form' ), 20, 2 );
-			add_action( 'manage_cf7pl_data_posts_custom_column', array( $this, 'action__manage_cf7pl_data_posts_custom_column' ), 10, 2 );
+			add_action( 'manage_cf7pe_data_posts_custom_column', array( $this, 'action__manage_cf7pe_data_posts_custom_column' ), 10, 2 );
 			add_action( 'restrict_manage_posts', array( $this, 'action__restrict_manage_posts' ) );
 			
 			
@@ -53,7 +53,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				}
 
 				$args = array(
-					'post_type' => 'cf7pl_data',
+					'post_type' => 'cf7pe_data',
 					'posts_per_page' => -1
 				);
 
@@ -187,8 +187,8 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		 * - Add mes boxes for the CPT "cf7sa_data"
 		 */
 		function action__add_meta_boxes() {
-			add_meta_box( 'cfpe-data', __( 'From Data', 'accept-paypal-payments-using-contact-form-7' ), array( $this, 'cfpe_show_from_data' ), 'cf7pl_data', 'normal', 'high' );
-			add_meta_box( 'cfpe-help', __( 'Do you need help for configuration?', 'accept-paypal-payments-using-contact-form-7' ), array( $this, 'cfpe_show_help_data' ), 'cf7pl_data', 'side', 'high' );
+			add_meta_box( 'cf7pe_data', __( 'From Data', 'accept-paypal-payments-using-contact-form-7' ), array( $this, 'cfpe_show_from_data' ), 'cf7pe_data', 'normal', 'high' );
+			add_meta_box( 'cfpe-help', __( 'Do you need help for configuration?', 'accept-paypal-payments-using-contact-form-7' ), array( $this, 'cfpe_show_help_data' ), 'cf7pe_data', 'side', 'high' );
 		}
 
 		/**
@@ -228,16 +228,16 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		}
 
          /**
-		 * Action: manage_cf7pl_data_posts_custom_column
+		 * Action: manage_cf7pe_data_posts_custom_column
 		 *
-		 * @method action__manage_cf7pl_data_posts_custom_column
+		 * @method action__manage_cf7pe_data_posts_custom_column
 		 *
 		 * @param  string  $column
 		 * @param  int     $post_id
 		 *
 		 * @return string
 		 */
-		function action__manage_cf7pl_data_posts_custom_column( $column, $post_id ) {
+		function action__manage_cf7pe_data_posts_custom_column( $column, $post_id ) {
 			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post_id ) );
 			switch ( $column ) {
 
@@ -306,7 +306,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		 */
 		function action__restrict_manage_posts( $post_type ) {
 
-			if ( 'cf7pl_data' != $post_type ) {
+			if ( 'cf7pe_data' != $post_type ) {
 				return;
 			}
 
@@ -354,7 +354,6 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		 * @param  object $post WP_Post
 		 */
 		function cfpe_show_from_data( $post ) {
-			//print_r($post);
 			$fields = CF7PE()->lib->data_fields;
 
 			$form_id = get_post_meta( $post->ID, '_form_id', true );
@@ -371,12 +370,6 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 							echo'<tr class="inside-field"><th scope="row"><a href="https://www.zealousweb.com/wordpress-plugins/accept-stripe-payments-using-contact-form-7/" target="_blank">To unlock more features consider upgrading to PRO.</a></th></tr>';
 
 					}else{
-
-						// if ( array_key_exists( '_transaction_response', $fields ) && empty( get_post_meta( $form_id, CF7PE_META_PREFIX . 'debug', true ) ) ) {
-						// 	unset( $fields['_transaction_response'] );
-						// }
-
-						//$attachment = ( !empty( get_post_meta( $post->ID, '_attachment', true ) ) ? unserialize( get_post_meta( $post->ID, '_attachment', true ) ) : '' );
 						$attachment = ( !empty( get_post_meta( $post->ID, '_attachment', true ) ) ? '' : '' );
 						$root_path = get_home_path();
 
@@ -498,16 +491,13 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			echo '</table>';
 		}
 
-
-	
-
 		/**
 		 * - Used to add meta box in CPT detail page.
 		 */
 		function cfpe_show_help_data() {
 			echo '<div id="cf7sa-data-help">' .
 				apply_filters(
-					CF7PE_PREFIX . '/help/cf7pl_data/postbox',
+					CF7PE_PREFIX . '/help/cf7pe_data/postbox',
 					'<ol>' .
 						'<li><a href="https://www.zealousweb.com/documentation/accept-paypal-payments-using-contact-form-7/" target="_blank">Refer the document.</a></li>' .
 						'<li><a href="https://www.zealousweb.com/contact/" target="_blank">Contact Us</a></li>' .

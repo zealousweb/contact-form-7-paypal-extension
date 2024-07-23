@@ -23,11 +23,9 @@ $email                  = get_post_meta( $post_id, CF7PE_META_PREFIX . 'email', 
 $description            = get_post_meta( $post_id, CF7PE_META_PREFIX . 'description', true );
 $quantity               = get_post_meta( $post_id, CF7PE_META_PREFIX . 'quantity', true );
 $mailsend               = get_post_meta( $post_id, CF7PE_META_PREFIX . 'mailsend', true );
-
 $success_returnURL      = get_post_meta( $post_id, CF7PE_META_PREFIX . 'success_returnurl', true );
 $cancle_returnURL       = get_post_meta( $post_id, CF7PE_META_PREFIX . 'cancel_returnurl', true );
 $message                = get_post_meta( $post_id, CF7PE_META_PREFIX . 'message', true );
-
 $currency               = get_post_meta( $post_id, CF7PE_META_PREFIX . 'currency', true );
 
 $currency_code = array(

@@ -64,12 +64,12 @@ if ( !class_exists( 'CF7PE' ) ) {
 			 */
 
 			 $labels = array(
-				'name' => __( 'paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
-				'singular_name' => __( 'paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
+				'name' => __( 'Paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
+				'singular_name' => __( 'Paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
 			);
 
 			$args = array(
-				'label' => __( 'paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
+				'label' => __( 'Paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
 				'labels' => $labels,
 				'description' => '',
 				'public' => false,
@@ -95,7 +95,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 				'supports' => array( 'title' ),
 			);
 
-			register_post_type( 'cf7pl_data', $args );
+			register_post_type( 'cf7pe_data', $args );
 		}
 
 		/**

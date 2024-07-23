@@ -118,8 +118,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				&& isset( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 				&& !empty( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 			) {
-				
-				//$serialized_form_data = $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ];
+
 				$from_data = unserialize( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] );
 				$form_ID = $from_data->get_contact_form()->id();
 
@@ -147,15 +146,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					'mode' => ( !empty( $mode_sandbox ) ? 'sandbox' : 'live' )
 				];
 
-				/*$apimode = ( $mode_sandbox ) ? 'sandbox' : 'live';*/
 				$apiContext = $this->getApiContext( $paypalConfig['client_id'], $paypalConfig['client_secret'], $mode_sandbox );
-
-				/*$apiContext->setConfig(
-					array(
-						'mode' => $apimode
-					)
-				);*/
-
 				$payment = Payment::get($paymentId, $apiContext);
 				/**
 				 * Add transctions to Paypal Account
@@ -230,7 +221,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				//post type
 
 				$sa_post_id = wp_insert_post( array (
-					'post_type' => 'cf7pl_data',
+					'post_type' => 'cf7pe_data',
 					'post_title' => ( !empty( $email ) ? $email : $payment->transactions[0]->invoice_number ), // email/invoice_no
 					'post_status' => 'publish',
 					'comment_status' => 'closed',
@@ -507,34 +498,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					wp_redirect( $payment->getApprovalLink() );
 					exit;
 				}
-				// $sa_post_id = wp_insert_post( array (
-				// 	'post_type' => 'cf7pl_data',
-				// 	'post_title' => ( !empty( $mail ) ? $mail : $invoiceNumber ), // email/invoice_no
-				// 	'post_status' => 'publish',
-				// 	'comment_status' => 'closed',
-				// 	'ping_status' => 'closed',
-				// ) );
-
-				// if ( !empty( $sa_post_id ) ) {
-
-				// 	$stored_data = $posted_data;
-				// 	//unset( $stored_data['contact_form_id'] );
-				// 	//unset( $stored_data['stripeClientSecret'] );
-
-				// 	add_post_meta( $sa_post_id, '_form_id', $form_ID );
-				// 	add_post_meta( $sa_post_id, '_email', $mail );
-				// 	add_post_meta( $sa_post_id, '_transaction_id', $data );
-				// 	add_post_meta( $sa_post_id, '_invoice_no', $invoiceNumber );
-				// 	add_post_meta( $sa_post_id, '_amount', $amount_val );
-				// 	add_post_meta( $sa_post_id, '_quantity', $quanity_val );
-				// 	add_post_meta( $sa_post_id, '_total', ($amountPayable/100) );
-				// 	//add_post_meta( $sa_post_id, '_request_Ip', $this->getUserIpAddr() );
-				// 	add_post_meta( $sa_post_id, '_currency', $currency );
-				// 	add_post_meta( $sa_post_id, '_form_data', serialize( $stored_data ) );
-				// 	add_post_meta( $sa_post_id, '_transaction_response', json_encode( $payment ) );
-				// 	add_post_meta( $sa_post_id, '_transaction_status', $payment );
-				// 	add_post_meta( $sa_post_id, '_attachment', $attachment );
-				// }
 
 			}
 
