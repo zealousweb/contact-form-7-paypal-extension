@@ -19,6 +19,7 @@ $sandbox_client_secret  = get_post_meta( $post_id, CF7PE_META_PREFIX . 'sandbox_
 $live_client_id         = get_post_meta( $post_id, CF7PE_META_PREFIX . 'live_client_id', true );
 $live_client_secret     = get_post_meta( $post_id, CF7PE_META_PREFIX . 'live_client_secret', true );
 $amount                 = get_post_meta( $post_id, CF7PE_META_PREFIX . 'amount', true );
+$email                  = get_post_meta( $post_id, CF7PE_META_PREFIX . 'email', true );
 $description            = get_post_meta( $post_id, CF7PE_META_PREFIX . 'description', true );
 $quantity               = get_post_meta( $post_id, CF7PE_META_PREFIX . 'quantity', true );
 $mailsend               = get_post_meta( $post_id, CF7PE_META_PREFIX . 'mailsend', true );
@@ -151,6 +152,16 @@ echo '<div class="cf7pe-settings">' .
 						'<input id="' . CF7PE_META_PREFIX . 'quantity" name="' . CF7PE_META_PREFIX . 'quantity" type="text" value="' . esc_attr( $quantity ) . '" />' .
 					'</td>' .
 				'</tr>' .
+				'<tr class="form-field">' .
+						'<th>' .
+							'<label for="' . CF7PE_META_PREFIX . 'email">' .
+								__( 'Customer Email Field Name (Required)', 'contact-form-7-stripe-addon' ) .
+							'</label>' .
+						'</th>' .
+						'<td>' .
+							'<input class="cf7sa_cus_css" id="' . CF7PE_META_PREFIX . 'email" name="' . CF7PE_META_PREFIX . 'email" type="text" value="' . esc_attr( $email ) . '" ' . ( !empty( $email ) ? 'required' : '' ) . ' />' .
+						'</td>' .
+					'</tr>' .
 				'<tr class="form-field">' .
 					'<th>' .
 						'<label for="' . CF7PE_META_PREFIX . 'description">' .

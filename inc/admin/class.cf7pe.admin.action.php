@@ -211,6 +211,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				CF7PE_META_PREFIX . 'live_client_secret',
 				CF7PE_META_PREFIX . 'amount',
 				CF7PE_META_PREFIX . 'quantity',
+				CF7PE_META_PREFIX . 'email',
 				CF7PE_META_PREFIX . 'description',
 				CF7PE_META_PREFIX . 'currency',
 				CF7PE_META_PREFIX . 'success_returnurl',
@@ -237,9 +238,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		 * @return string
 		 */
 		function action__manage_cf7pl_data_posts_custom_column( $column, $post_id ) {
-				//print_r($column);die();
 			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post_id ) );
-			
 			switch ( $column ) {
 
 				case 'form_id' :
@@ -350,7 +349,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		/**
 		 * - Used to display the form data in CPT detail page.
 		 *
-		 * @method cfsa_show_from_data
+		 * @method cfpe_show_from_data
 		 *
 		 * @param  object $post WP_Post
 		 */
@@ -360,7 +359,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 			$form_id = get_post_meta( $post->ID, '_form_id', true );
 			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post->ID ) );
-
+			
 			echo '<table class="cf7sa-box-data form-table">' .
 				'<style>.inside-field td, .inside-field th{ padding-top: 5px; padding-bottom: 5px;} .postbox table.form-table{ word-break: break-all; }</style>';
 
@@ -373,9 +372,9 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 					}else{
 
-						if ( array_key_exists( '_transaction_response', $fields ) && empty( get_post_meta( $form_id, CF7PE_META_PREFIX . 'debug', true ) ) ) {
-							unset( $fields['_transaction_response'] );
-						}
+						// if ( array_key_exists( '_transaction_response', $fields ) && empty( get_post_meta( $form_id, CF7PE_META_PREFIX . 'debug', true ) ) ) {
+						// 	unset( $fields['_transaction_response'] );
+						// }
 
 						//$attachment = ( !empty( get_post_meta( $post->ID, '_attachment', true ) ) ? unserialize( get_post_meta( $post->ID, '_attachment', true ) ) : '' );
 						$attachment = ( !empty( get_post_meta( $post->ID, '_attachment', true ) ) ? '' : '' );

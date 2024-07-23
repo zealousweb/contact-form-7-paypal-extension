@@ -77,7 +77,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		 *
 		 */
 		function action__init() {
-
+			
 			if ( !isset( $_SESSION ) || session_status() == PHP_SESSION_NONE ) {
 				session_start();
 			}
@@ -98,10 +98,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 
 				add_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
 				remove_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
-
-				/*if ( isset( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] ) ) {
-					unset( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] );
-				}*/
+				
 
 				if ( isset( $_SESSION[ CF7PE_META_PREFIX . 'context_' . $form_ID ] ) ) {
 					unset( $_SESSION[ CF7PE_META_PREFIX . 'context_' . $form_ID ] );
@@ -122,7 +119,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				&& !empty( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 			) {
 				
-				
+				//$serialized_form_data = $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ];
 				$from_data = unserialize( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] );
 				$form_ID = $from_data->get_contact_form()->id();
 
@@ -138,7 +135,10 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					$live_client_id         = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'live_client_id', true );
 					$live_client_secret     = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'live_client_secret', true );
 					$currency               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
-					
+					$email                  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
+					$quantity            	= get_post_meta( $form_ID, CF7PE_META_PREFIX . 'quantity', true );
+					$amount_form            = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'amount', true );
+									
 				}
 
 				$paypalConfig = [
@@ -178,6 +178,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$transaction->setAmount( $amount );
 				// Add the above transaction object inside our Execution object.
 				$execution->addTransaction($transaction);
+				
 				try {
 					// Execute the payment
 					// (See bootstrap.php for more on `ApiContext`)
@@ -186,7 +187,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					try {
 						//$payment = Payment::get($paymentId, $apiContext);
 					} catch (Exception $ex) {
-						//echo "<pre>"; print_r($ex);
 						echo $ex->getCode(); // Prints the Error Code
     					echo $ex->getData(); // Prints the detailed error message
 						return;
@@ -204,9 +204,15 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					'payment_status' => $payment->getState(),
 					'invoice_id' => $payment->transactions[0]->invoice_number
 				];
-
+				$payment_json = json_encode($result->toArray(), JSON_PRETTY_PRINT);
 				add_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
 				$this->mail( $from_data, $from_data->get_posted_data() );
+				$form_data_pe = serialize($from_data->get_posted_data());
+				$posted_data = unserialize($form_data_pe);
+
+				$email = !empty($email) && array_key_exists($email, $posted_data) ? $posted_data[$email] : '';
+				$quanity_val = ( ( !empty( $quantity ) && array_key_exists( $quantity, $posted_data ) ) ? floatval( $posted_data[$quantity] ) : '' );
+				$amount_val  = ( ( !empty( $amount_form ) && array_key_exists( $amount_form, $posted_data ) ) ? floatval( $posted_data[$amount_form] ) : '0' );
 				remove_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
 
 				if ( isset( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] ) ) {
@@ -221,6 +227,32 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					$this->zw_remove_uploaded_files( $this->get_form_attachments( $form_ID ) );
 				}
 
+				//post type
+
+				$sa_post_id = wp_insert_post( array (
+					'post_type' => 'cf7pl_data',
+					'post_title' => ( !empty( $email ) ? $email : $payment->transactions[0]->invoice_number ), // email/invoice_no
+					'post_status' => 'publish',
+					'comment_status' => 'closed',
+					'ping_status' => 'closed',
+				) );
+
+				if ( !empty( $sa_post_id ) ) {
+					
+					add_post_meta( $sa_post_id, '_form_id', $form_ID );
+					add_post_meta( $sa_post_id, '_email', $email );
+					add_post_meta( $sa_post_id, '_transaction_id', $payment->getId());
+					add_post_meta( $sa_post_id, '_invoice_no', $payment->transactions[0]->invoice_number );
+					add_post_meta( $sa_post_id, '_amount',$amount_val);
+					add_post_meta( $sa_post_id, '_quantity', $quanity_val );
+					add_post_meta( $sa_post_id, '_total', ($amountPayable) );
+					add_post_meta( $sa_post_id, '_request_Ip', $this->getUserIpAddr() );
+					add_post_meta( $sa_post_id, '_currency', $currency );
+					add_post_meta( $sa_post_id, '_form_data', $form_data_pe);
+					add_post_meta( $sa_post_id, '_transaction_response', $payment_json);
+					add_post_meta( $sa_post_id, '_transaction_status', $payment->getState() );
+					add_post_meta( $sa_post_id, '_attachment', $attachment );
+				}
 				
 
 			}
@@ -336,8 +368,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				// Set some example data for the payment.
 				$currency               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
 
-				// $mail       = ( ( !empty( $mail ) && array_key_exists( $mail, $posted_data ) ) ? $posted_data[$mail] : '' );
-				// $description = ( ( !empty( $description ) && array_key_exists( $description, $posted_data ) ) ? $posted_data[$description] : get_bloginfo( 'name' ) );
+				$mail       = ( ( !empty( $mail ) && array_key_exists( $mail, $posted_data ) ) ? $posted_data[$mail] : '' );
+				$description = ( ( !empty( $description ) && array_key_exists( $description, $posted_data ) ) ? $posted_data[$description] : get_bloginfo( 'name' ) );
 				add_filter( 'wpcf7_skip_mail', array( $this, 'filter__wpcf7_skip_mail' ), 20 );
 
 				$amount_val  = ( ( !empty( $amount ) && array_key_exists( $amount, $posted_data ) ) ? floatval( $posted_data[$amount] ) : '0' );
@@ -475,34 +507,34 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					wp_redirect( $payment->getApprovalLink() );
 					exit;
 				}
-				$sa_post_id = wp_insert_post( array (
-					'post_type' => 'cf7pl_data',
-					'post_title' => ( !empty( $mail ) ? $mail : $invoiceNumber ), // email/invoice_no
-					'post_status' => 'publish',
-					'comment_status' => 'closed',
-					'ping_status' => 'closed',
-				) );
+				// $sa_post_id = wp_insert_post( array (
+				// 	'post_type' => 'cf7pl_data',
+				// 	'post_title' => ( !empty( $mail ) ? $mail : $invoiceNumber ), // email/invoice_no
+				// 	'post_status' => 'publish',
+				// 	'comment_status' => 'closed',
+				// 	'ping_status' => 'closed',
+				// ) );
 
-				if ( !empty( $sa_post_id ) ) {
+				// if ( !empty( $sa_post_id ) ) {
 
-					$stored_data = $posted_data;
-					//unset( $stored_data['contact_form_id'] );
-					//unset( $stored_data['stripeClientSecret'] );
+				// 	$stored_data = $posted_data;
+				// 	//unset( $stored_data['contact_form_id'] );
+				// 	//unset( $stored_data['stripeClientSecret'] );
 
-					add_post_meta( $sa_post_id, '_form_id', $form_ID );
-					add_post_meta( $sa_post_id, '_email', $mail );
-					add_post_meta( $sa_post_id, '_transaction_id', $data );
-					add_post_meta( $sa_post_id, '_invoice_no', $invoiceNumber );
-					add_post_meta( $sa_post_id, '_amount', $amount_val );
-					add_post_meta( $sa_post_id, '_quantity', $quanity_val );
-					add_post_meta( $sa_post_id, '_total', ($amountPayable/100) );
-					//add_post_meta( $sa_post_id, '_request_Ip', $this->getUserIpAddr() );
-					add_post_meta( $sa_post_id, '_currency', $currency );
-					add_post_meta( $sa_post_id, '_form_data', serialize( $stored_data ) );
-					add_post_meta( $sa_post_id, '_transaction_response', json_encode( $payment ) );
-					//add_post_meta( $sa_post_id, '_transaction_status', $payment );
-					add_post_meta( $sa_post_id, '_attachment', $attachment );
-				}
+				// 	add_post_meta( $sa_post_id, '_form_id', $form_ID );
+				// 	add_post_meta( $sa_post_id, '_email', $mail );
+				// 	add_post_meta( $sa_post_id, '_transaction_id', $data );
+				// 	add_post_meta( $sa_post_id, '_invoice_no', $invoiceNumber );
+				// 	add_post_meta( $sa_post_id, '_amount', $amount_val );
+				// 	add_post_meta( $sa_post_id, '_quantity', $quanity_val );
+				// 	add_post_meta( $sa_post_id, '_total', ($amountPayable/100) );
+				// 	//add_post_meta( $sa_post_id, '_request_Ip', $this->getUserIpAddr() );
+				// 	add_post_meta( $sa_post_id, '_currency', $currency );
+				// 	add_post_meta( $sa_post_id, '_form_data', serialize( $stored_data ) );
+				// 	add_post_meta( $sa_post_id, '_transaction_response', json_encode( $payment ) );
+				// 	add_post_meta( $sa_post_id, '_transaction_status', $payment );
+				// 	add_post_meta( $sa_post_id, '_attachment', $attachment );
+				// }
 
 			}
 
@@ -793,6 +825,27 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			$plugin_data = get_plugin_data( $wpcf7_path );
 
 			return $plugin_data['Version'];
+		}
+
+		/**
+		 * Function: getUserIpAddr
+		 *
+		 * @method getUserIpAddr
+		 *
+		 * @return string
+		 */
+		function getUserIpAddr() {
+			$ip = '';
+			if ( !empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+				//ip from share internet
+				$ip = $_SERVER['HTTP_CLIENT_IP'];
+			} else if ( !empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+				//ip pass from proxy
+				$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+			} else {
+				$ip = $_SERVER['REMOTE_ADDR'];
+			}
+			return $ip;
 		}
 
 	}
