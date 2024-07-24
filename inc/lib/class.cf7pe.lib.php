@@ -26,6 +26,20 @@ use PayPal\Api\Transaction;
 use PayPal\Api\ExecutePayment;
 use PayPal\Exception\PayPalConnectionException;
 use PayPal\Api\Capture;
+use PayPal\Api\Refund;
+use PayPal\Api\RefundRequest;
+use PayPal\Api\Sale;
+use PayPal\Api\PaymentDefinition;
+use PayPal\Api\Currency;
+use PayPal\Api\Plan;
+use PayPal\Api\Agreement;
+use PayPal\Api\AgreementStateDescriptor;
+use PayPal\Api\ShippingAddress;
+use PayPal\Api\PayerInfo;
+use PayPal\Api\MerchantPreferences;
+use PayPal\Api\Patch;
+use PayPal\Api\PatchRequest;
+use PayPal\Common\PayPalModel;
 
 if ( !class_exists( 'CF7PE_Lib' ) ) {
 
@@ -45,6 +59,9 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			'_form_data'            => 'Form data',
 			'_transaction_response' => 'Transaction response',
 			'_transaction_status'   => 'Transaction status',
+			'_recurring_payment'   => 'Recurring Payment',
+			'_paymen_type'   => 'Payment type',
+			'_refund_payment'   => 'Refund Payment',
 		);
 		
 		var $context = '';
@@ -54,8 +71,15 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			add_action( 'init', array( $this, 'action__init' ) );
 
 			add_action( 'wpcf7_before_send_mail', array( $this, 'action__wpcf7_before_send_mail' ), 20, 3 );
+
+			add_action( CF7PE_PREFIX . '/paypal/save/data', array( $this, 'action__cf7pe_paypal_save_data' ), 10, 4 );
+
 			add_filter( 'wpcf7_ajax_json_echo',   array( $this, 'filter__wpcf7_ajax_json_echo'   ), 20, 2 );
 			add_action( 'wpcf7_init', array( $this, 'action__wpcf7_verify_version' ), 10, 0 );
+			
+			// Refund payment functionality
+			add_action('wp_ajax_action__refund_payment' ,array( $this, 'action__refund_payment'));
+			add_action('wp_ajax_nopriv_action__refund_payment', array( $this,'action__refund_payment')) ;
 		}
 
 		/*
@@ -67,15 +91,257 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		##     ## ##    ##    ##     ##  ##     ## ##   ### ##    ##
 		##     ##  ######     ##    ####  #######  ##    ##  ######
 		*/
-
 		/**
 		 * Action: init
 		 *
 		 * - Fire the email when return back from the paypal.
 		 *
-		 * @method action__init
+		 * @method action__cf7pe_paypal_save_data
 		 *
 		 */
+		function action__cf7pe_paypal_save_data( $from_data, $token, $payment, $invoiceNumber ) {
+			$cf7pap_post_id = '';
+			
+			if ( empty( $from_data ) )
+				return;
+
+			add_filter( CF7PE_PREFIX . '/paypal/form/data', function( $frm_data, $mail ) use ( $from_data, $token, $payment ) {
+
+				if ( empty( $payment ) ) {
+					return $frm_data;
+				}
+
+				if ( strpos( $mail['body'], '[paypal-pro' ) === false ) {
+					return $frm_data;
+				}
+
+				$data = array();
+				$data[] = 'Transaction ID: ' . ( !empty( $payment ) ? $payment->getId() : '' );
+				$data[] = 'Transaction Status: ' . ( !empty( $payment ) ?  $payment->getState() : 'cancel' );
+
+				if ( !empty( $mail['use_html'] ) ) {
+					$frm_data['paypal-pro'] = implode( '<br/>', $data );
+				} else {
+					$frm_data['paypal-pro'] = implode( "\n", $data );
+				}
+				
+
+				return $frm_data;
+			}, 10, 5 );
+			
+			if (isset($from_data->contact_form) && $from_data->contact_form instanceof WPCF7_ContactForm) {
+				$form_ID = $from_data->contact_form->id();
+			}
+			$email  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
+			$email = !empty($email) && array_key_exists($email, $posted_data) ? $posted_data[$email] : '';
+			global $wpdb;
+
+			if ( $token ) {
+
+				$cf7pap_query = $wpdb->prepare(
+					'SELECT ID FROM ' . $wpdb->posts . '
+					WHERE post_title = %s
+					AND post_type = \'cf7pe_data\'',
+					( !empty( $token ) ? $token : '' )
+				);
+				
+				$wpdb->query( $cf7pap_query );
+
+				if ( !$wpdb->num_rows ) {
+
+					$cf7pap_post_id = wp_insert_post( array (
+						'post_type' => 'cf7pe_data',
+						'post_title' => ( !empty( $email ) ? $email : $token), // email/invoice_no
+						'post_status' => 'publish',
+						'comment_status' => 'closed',
+						'ping_status' => 'closed',
+					) );
+				}
+
+			}
+
+			if ( !empty( $cf7pap_post_id ) ) {
+
+				$stored_data = ( !empty( $from_data ) ? $from_data->get_posted_data() : array() );
+				$form_ID       = ( !empty( $from_data ) ? $from_data->get_contact_form()->id() : '' );
+
+				$attachent = '';
+
+				if ( !empty( $from_data->uploaded_files() ) && !empty( $invoiceNumber ) ) {
+					$attachent = get_transient( CF7PE_META_PREFIX . 'form_attachment_' . $invoiceNumber );
+				}
+
+				$currency    = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
+				$amount      = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'amount', true );
+				$quantity    = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'quantity', true );
+				$amount_val  = ( ( !empty( $amount ) && array_key_exists( $amount, $stored_data ) ) ? floatval( $stored_data[$amount] ) : '0' );
+				$quanity_val = ( ( !empty( $quantity ) && array_key_exists( $quantity, $stored_data ) ) ? floatval( $stored_data[$quantity] ) : '' );
+				
+				// recurring data get
+				$use_recurring_plan   = get_post_meta($form_ID, CF7PE_META_PREFIX . 'use_recurring_plan', true);
+				$amountPayable = (float) ( empty( $quanity_val ) ? $amount_val : ( $quanity_val * $amount_val ) );
+
+				if (
+					!empty( $amount )
+					&& array_key_exists( $amount, $stored_data )
+					&& is_array( $stored_data[$amount] )
+					&& !empty( $stored_data[$amount] )
+				) {
+					$val = 0;
+					foreach ( $stored_data[$amount] as $k => $value ) {
+						$val = $val + floatval($value);
+					}
+					$amount_val = $val;
+				}
+
+				if (
+					!empty( $quantity )
+					&& array_key_exists( $quantity, $stored_data )
+					&& is_array( $stored_data[$quantity] )
+					&& !empty( $stored_data[$quantity] )
+				) {
+					$qty_val = 0;
+					foreach ( $stored_data[$quantity] as $k => $qty ) {
+						$qty_val = $qty_val + floatval($qty);
+					}
+					$quanity_val = $qty_val;
+				}
+				add_post_meta( $cf7pap_post_id, '_email', $email );
+				add_post_meta( $cf7pap_post_id, '_form_id', $form_ID );
+				add_post_meta( $cf7pap_post_id, '_payer_email', ( !empty( $payment ) ? $payment->getPayer()->getPayerInfo()->getEmail() : '' ) );
+				add_post_meta( $cf7pap_post_id, '_transaction_id', ( !empty( $payment ) ? $payment->getId() : '' ));
+				add_post_meta( $cf7pap_post_id, '_amount', $amount_val );
+				add_post_meta( $cf7pap_post_id, '_quantity', $quanity_val );
+				add_post_meta( $cf7pap_post_id, '_request_Ip', $this->getUserIpAddr() );
+				add_post_meta( $cf7pap_post_id, '_currency', $currency );
+				add_post_meta( $cf7pap_post_id, '_form_data', serialize( $stored_data ) );
+				add_post_meta( $cf7pap_post_id, '_attachment', $attachent );
+				add_post_meta( $cf7pap_post_id, '_transaction_response', ( !empty( $payment ) ? json_decode($payment) : '' ) );
+				
+				/* Start API Responsive ADD post type cf7pap_data */
+
+				if(!empty($use_recurring_plan)) {
+					// Set some example data for the payment.
+					add_post_meta( $cf7pap_post_id, '_agreement_Id',( !empty( $payment ) ? $payment->getId() : '' ));
+					add_post_meta( $cf7pap_post_id, '_total', ( !empty( $payment ) ? $amountPayable : $amountPayable ) );
+					add_post_meta( $cf7pap_post_id, '_invoice_no', ( !empty( $payment ) ? '' : '' ) );
+					add_post_meta( $cf7pap_post_id, '_transaction_status', ( !empty( $payment ) ?  'approved' : 'cancel' ) );
+				}else{
+					add_post_meta( $cf7pap_post_id, '_invoice_no', ( !empty( $payment ) ? $payment->transactions[0]->invoice_number : '' ) );
+					add_post_meta( $cf7pap_post_id, '_total', ( !empty( $payment ) ? $payment->transactions[0]->amount->total : $amountPayable ) );
+					add_post_meta( $cf7pap_post_id, '_transaction_status', ( !empty( $payment ) ?  $payment->getState() : 'cancel' ) );
+				}
+				/* End API Responsive ADD post type cf7pap_data */
+			}
+
+			set_transient( CF7PE_META_PREFIX . 'post_entry_id' . $invoiceNumber, $cf7pap_post_id, (60 * 60 * 24) );
+
+		}
+		/**
+		 * - Refund payment
+		 */
+		function action__refund_payment() {
+
+			$enable_log = trim( get_option( '' . CF7PE_META_PREFIX . 'enable_log' ) );
+			$contact_form_id = '';
+			$entry_id = '';
+			$transaction_id = '';
+			if( isset($_POST['contact_form_id']) && !empty($_POST['contact_form_id']) ) { //phpcs:ignore
+				$contact_form_id = $_POST['contact_form_id']; //phpcs:ignore
+			}
+			if( isset( $_POST['entry_id']) && !empty( $_POST['entry_id']) ) { //phpcs:ignore
+				$entry_id = $_POST['entry_id']; //phpcs:ignore
+			}
+			if( isset($_POST['transaction_id']) && !empty($_POST['transaction_id']) ) { //phpcs:ignore
+				$transaction_id = $_POST['transaction_id']; //phpcs:ignore
+			}
+			$mode_sandbox = trim( get_post_meta( $contact_form_id, CF7PE_META_PREFIX . 'mode_sandbox', true ) );
+			$sandbox_client_id = get_post_meta( $contact_form_id, CF7PE_META_PREFIX . 'sandbox_client_id', true );
+			$sandbox_client_secret = get_post_meta( $contact_form_id, CF7PE_META_PREFIX . 'sandbox_client_secret', true );
+			$live_client_id  = get_post_meta( $contact_form_id, CF7PE_META_PREFIX . 'live_client_id', true );
+			$live_client_secret = get_post_meta( $contact_form_id, CF7PE_META_PREFIX . 'live_client_secret', true );
+			
+			if( $mode_sandbox ){
+				$client_id = $sandbox_client_id;
+				$client_secret = $sandbox_client_secret;
+				$curl_token_url = 'https://api.sandbox.paypal.com/v1/oauth2/token';
+				$curl_sale_url = 'https://api.sandbox.paypal.com/v1/payments/payment/';
+				$curl_refund_url = 'https://api.sandbox.paypal.com/v1/payments/sale/';
+			}else{
+				$client_id = $live_client_id;
+				$client_secret = $live_client_secret;
+				$curl_token_url = 'https://api.paypal.com/v1/oauth2/token';
+				$curl_sale_url = 'https://api.paypal.com/v1/payments/payment/';
+				$curl_refund_url = 'https://api.paypal.com/v1/payments/sale/';
+			}
+		
+			/* Get PayPal access token via cURL */
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+			curl_setopt($ch, CURLOPT_URL, $curl_token_url);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=client_credentials");
+			curl_setopt($ch, CURLOPT_POST, 1);
+			curl_setopt($ch, CURLOPT_USERPWD, $client_id . ":" . $client_secret);
+			$headers = array();
+			$headers[] = "Accept: application/json";
+			$headers[] = "Accept-Language: en_US";
+			$headers[] = "Content-Type: application/x-www-form-urlencoded";
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+			$result = curl_exec($ch);
+			$access_token_id = json_decode($result)->access_token;
+			if (curl_errno($ch)) {
+				echo 'Error:' . curl_error($ch); //phpcs:ignore
+			}
+
+			/* Get sale id via cURL */
+			$curl = curl_init($curl_sale_url.$transaction_id);
+			curl_setopt($curl, CURLOPT_POST, false);
+			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($curl, CURLOPT_HEADER, false);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+				'Authorization: Bearer ' . $access_token_id,
+				'Accept: application/json',
+				'Content-Type: application/json'
+			));
+			$response = curl_exec($curl);
+			$response_data=json_decode($response,true);
+			
+			/* Payment refund via cURL */
+			$paypal_sale_id = $response_data['transactions'][0]['related_resources'][0]['sale']['id'];
+			$header = Array(
+				"Content-Type: application/json",
+				"Authorization: Bearer $access_token_id",
+			);
+			$ch = curl_init($curl_refund_url.$paypal_sale_id.'/refund');
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+			$response = json_decode(curl_exec($ch));
+			$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+			if( $response->name === 'TRANSACTION_REFUSED'){
+				echo 'already payment refund';
+				if($enable_log === '1'){
+					$message="already payment refund.";
+					wpcf7pap_error_log_generate($message);
+				}
+
+			}else{
+				echo 'Payment refund successful';
+				update_post_meta($entry_id, '_transaction_status', 'refunded');
+
+				if($enable_log === '1'){
+					$message="Payment refund successful.";
+					wpcf7pap_error_log_generate($message);
+				}
+			}
+			exit();
+		}
+		
 		function action__init() {
 			
 			if ( !isset( $_SESSION ) || session_status() == PHP_SESSION_NONE ) {
@@ -93,8 +359,12 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				&& !empty( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 			) {
 				
+				$invoiceNumber = ( isset( $_REQUEST['inv'] ) ? $_REQUEST['inv'] : '' );
+				$from_data = unserialize( get_transient( CF7PE_META_PREFIX . 'form_instance' . $invoiceNumber ) );
 				$from_data = unserialize( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] );
 				$form_ID = $from_data->get_contact_form()->id();
+				
+				do_action( CF7PE_PREFIX . '/paypal/save/data', $from_data, $token = $_GET['token' ], $payment = '', $invoiceNumber );
 
 				add_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
 				remove_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
@@ -119,6 +389,10 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				&& !empty( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] )
 			) {
 
+				$invoiceNumber = ( isset( $_REQUEST['inv'] ) ? $_REQUEST['inv'] : '' );
+				
+				$from_data = unserialize( get_transient( CF7PE_META_PREFIX . 'form_instance' . $invoiceNumber ) );
+				
 				$from_data = unserialize( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] );
 				$form_ID = $from_data->get_contact_form()->id();
 
@@ -194,6 +468,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					'payment_amount' => $payment->transactions[0]->amount->total,
 					'payment_status' => $payment->getState(),
 					'invoice_id' => $payment->transactions[0]->invoice_number
+					
 				];
 				$payment_json = json_encode($result->toArray(), JSON_PRETTY_PRINT);
 				add_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
@@ -218,9 +493,12 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					$this->zw_remove_uploaded_files( $this->get_form_attachments( $form_ID ) );
 				}
 
+				
+				do_action( CF7PE_PREFIX . '/paypal/save/data', $from_data, $token = $_GET['token' ], $payment, $invoiceNumber );
+
 				//post type
 
-				$sa_post_id = wp_insert_post( array (
+				/*$sa_post_id = wp_insert_post( array (
 					'post_type' => 'cf7pe_data',
 					'post_title' => ( !empty( $email ) ? $email : $payment->transactions[0]->invoice_number ), // email/invoice_no
 					'post_status' => 'publish',
@@ -243,7 +521,9 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					add_post_meta( $sa_post_id, '_transaction_response', $payment_json);
 					add_post_meta( $sa_post_id, '_transaction_status', $payment->getState() );
 					add_post_meta( $sa_post_id, '_attachment', $attachment );
-				}
+					add_post_meta( $sa_post_id, '_paymen_type',$payment_type);
+
+				}*/
 				
 
 			}
@@ -358,6 +638,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$mail                  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
 				// Set some example data for the payment.
 				$currency               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
+				
 
 				$mail       = ( ( !empty( $mail ) && array_key_exists( $mail, $posted_data ) ) ? $posted_data[$mail] : '' );
 				$description = ( ( !empty( $description ) && array_key_exists( $description, $posted_data ) ) ? $posted_data[$description] : get_bloginfo( 'name' ) );

@@ -177,8 +177,10 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		##     ##  ######     ##    ####  #######  ##    ##  ######
 		*/
 		function action__init() {
-			wp_register_script( CF7PE_PREFIX . '_admin_js', CF7PE_URL . 'assets/js/admin.min.js', array( 'jquery-core' ), CF7PE_VERSION );
+			//wp_register_script( CF7PE_PREFIX . '_admin_js', CF7PE_URL . 'assets/js/admin.min.js', array( 'jquery-core' ), CF7PE_VERSION );
+			wp_enqueue_script( CF7PE_PREFIX . '_admin_js',CF7PE_URL . 'assets/js/admin.js?t='.time(), array( 'jquery' ), true );
 			wp_register_style( CF7PE_PREFIX . '_admin_css', CF7PE_URL . 'assets/css/admin.min.css', array(), CF7PE_VERSION );
+			wp_localize_script( CF7PE_PREFIX . '_admin_js', 'admin_ajax_url', cf7pap_ajax_admin_URL());
 		}
 
 		/**
@@ -358,7 +360,9 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 			$form_id = get_post_meta( $post->ID, '_form_id', true );
 			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post->ID ) );
-			
+			$_paymen_type = get_post_meta($post->ID, '_paymen_type', true );
+			$subscription_canceled = get_post_meta($post->ID , 'subscription_canceled', true );
+			$_agreement_Id = get_post_meta($post->ID, '_agreement_Id', true );
 			echo '<table class="cf7sa-box-data form-table">' .
 				'<style>.inside-field td, .inside-field th{ padding-top: 5px; padding-bottom: 5px;} .postbox table.form-table{ word-break: break-all; }</style>';
 
@@ -465,21 +469,57 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 								&& $key == '_transaction_response'
 							) {
 
-								echo '<tr class="form-field">' .
-									'<th scope="row">' .
-										'<label for="hcf_author">' . __( sprintf( '%s', $value ), 'contact-form-7-authorize-net-addon' ) . '</label>' .
-									'</th>' .
-									'<td>' .
-										'<code style="word-break: break-all;">' .
-											(
-												get_post_meta( $post->ID , $key, true )
-											) .
-										'</code>' .
-									'</td>' .
-								'</tr>';
+							echo '<tr class="form-field">' .
+							'<th scope="row">' .
+								'<label for="hcf_author">' . esc_html__( sprintf( '%s', $value ), 'contact-form-7-paypal-addon-pro' ) . '</label>' .
+							'</th>' .
+							'<td>' .
+								'<code style="word-break: break-all;">' .
+									(
+										(
+											!empty(  get_post_meta( $post->ID , $key, true ) )
+											&& (
+												is_array( get_post_meta( $post->ID , $key, true ) )
+												|| is_object( get_post_meta( $post->ID , $key, true ) )
+											)
+										)
+										? json_encode(  get_post_meta( $post->ID , $key, true ) )
+										: esc_html(get_post_meta( $post->ID , $key, true ) )
+									) .
+								'</code>' .
+							'</td>' .
+						'</tr>';
 
 							}
-
+							else if( $key == '_refund_payment') {
+								if(empty($_paymen_type)) {
+									$transaction_status_get = '';
+									$transaction_status_get = get_post_meta($post->ID, '_transaction_status', true );
+									//if(empty($_agreement_Id)) {
+										if($transaction_status_get != 'cancel') {
+											$transaction_id = get_post_meta($post->ID, '_transaction_id', true );
+											echo '<tr class="form-field">' .
+												'<th scope="row">' .
+													'<label for="hcf_author">' . esc_html__( sprintf( '%s', $value ), 'contact-form-7-paypal-addon-pro' ) . '</label>' .
+												'</th>';
+												if($transaction_status_get === 'refunded') {
+													echo '<td>Already Refunded</td>';
+												}else{
+													echo '<td>'.
+															'<button type="button" class="pap-refund-payment" id="pap-refund-payment">Refund Payment</button>'.
+															'<input type="hidden" id="entry_id" name="entry_id" value="'.esc_attr($post->ID).'">'.
+															'<input type="hidden" id="contact_form_id" name="contact_form_id" value="'.esc_attr($form_id).'">'.
+															'<input type="hidden" id="transaction_id" name="transaction_id" value="'.esc_attr($transaction_id).'">'.
+															'<div id="pap-refund-payment-loader" class=""></div>'.
+													'</td>';
+												}
+											'<tr>';	
+										}
+									//}
+								}						
+							}
+							
+							
 
 						}
 
@@ -514,3 +554,16 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 }
 
 
+
+//Admin ajax call
+function cf7pap_ajax_admin_URL() {
+	$MyTemplatepath = get_stylesheet_directory_uri();
+	$MyHomepath = esc_url( home_url( '/' ) );
+	$admin_URL = admin_url( 'admin-ajax.php' ); // Your File Path
+	return array(
+	'admin_URL' => $admin_URL,
+	'MyTemplatepath' => $MyTemplatepath,
+	'MyHomepath' => $MyHomepath,
+	'post_id' => get_the_ID()
+	);
+}

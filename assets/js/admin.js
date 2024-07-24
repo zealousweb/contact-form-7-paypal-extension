@@ -90,5 +90,59 @@
 
 	jQuery( document ).ready( function() { check_paypal_field_validation() });
 	jQuery( document ).on('click',".ui-state-default",function() { check_paypal_field_validation() });
-
+	
 } )( jQuery );
+
+/*start Refund payment */
+jQuery(document).ready(function(){
+	jQuery(".pap-refund-payment").on("click", function () {
+        jQuery("#pap-refund-payment-loader").text('');
+        var entry_id = jQuery("#entry_id").val();
+        var contact_form_id = jQuery("#contact_form_id").val();
+		var transaction_id = jQuery("#transaction_id").val();
+        var refund_message=confirm("Are you sure to payment refund?");
+         if(!refund_message) {
+             return false;
+         }
+		refund_payment(entry_id,contact_form_id,transaction_id);
+	});
+});
+function refund_payment(entry_id,contact_form_id,transaction_id) {
+    var str = 'action=action__refund_payment';
+    var contact_form_id;
+    var entry_id;
+	var transaction_id;
+    var url1=window.location.href;
+    var redirect=url1.split('wp-admin')[0]+'wp-admin/post.php?post='+entry_id+'&action=edit';
+    if (contact_form_id != "") {
+        str += '&contact_form_id=' + contact_form_id;
+    }
+    if (entry_id != "") {
+        str += '&entry_id=' + entry_id;
+    }
+	if (transaction_id != "") {
+        str += '&transaction_id=' + transaction_id;
+    }
+    jQuery.ajax({
+            url: admin_ajax_url.admin_URL,
+            type: "POST",
+            data: str,
+        beforeSend: function () {
+            jQuery("#pap-refund-payment-loader").addClass("pap-refund-payment-loader");
+        },
+        success: function (data) {
+            jQuery("#pap-refund-payment-loader").removeClass("pap-refund-payment-loader");
+            console.log(data);
+            jQuery("#pap-refund-payment-loader").text(data);
+
+            setTimeout(function() {
+                jQuery('#pap-refund-payment-loader').fadeOut("slow");
+                window.location.href=redirect;
+            }, 3000 );
+           
+        }, error: function () {
+            console.log('ajax error');
+        }
+    });
+}
+/*End Refund payment */
