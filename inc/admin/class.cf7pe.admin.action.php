@@ -24,6 +24,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			add_action( 'init',  array( $this, 'action__init' ) );
 			add_action( 'init',  array( $this, 'action__init_99' ), 99 );
 			add_action( 'add_meta_boxes', array( $this, 'action__add_meta_boxes' ) );
+			
 			// Save settings of contact form 7 admin
 			add_action( 'wpcf7_save_contact_form', array( $this, 'action__wpcf7_save_contact_form' ), 20, 2 );
 			add_action( 'manage_cf7pe_data_posts_custom_column', array( $this, 'action__manage_cf7pe_data_posts_custom_column' ), 10, 2 );
@@ -63,7 +64,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 					return;
 
 				/** CSV Export **/
-				$filename = 'cf7pl-' . $form_id . '-' . time() . '.csv';
+				$filename = 'cf7pe-' . $form_id . '-' . time() . '.csv';
 
 				$header_row = array(
 					'_form_id'            => 'Form ID/Name',
@@ -118,7 +119,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 						}
 
 						/* form_data */
-						$data = unserialize( get_post_meta( $entry->ID, '_form_data', true ) );
+						$data = get_post_meta( $entry->ID, '_form_data', true ) ;
 						$hide_data = apply_filters( CF7PE_PREFIX . '/hide-display', array( '_wpcf7', '_wpcf7_version', '_wpcf7_locale', '_wpcf7_unit_tag', '_wpcf7_container_post' ) );
 						foreach ( $hide_data as $key => $value ) {
 							if ( array_key_exists( $value, $data ) ) {
@@ -241,11 +242,12 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		 */
 		function action__manage_cf7pe_data_posts_custom_column( $column, $post_id ) {
 			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post_id ) );
+			//print_r($data_ct);die();
 			switch ( $column ) {
 
 				case 'form_id' :
 					if( $data_ct ){
-							echo "<a href='".CF7PE_PRODUCT."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
+							echo "<a href='".esc_url(CF7PE_PRODUCT)."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
 					}else{
 						echo (
 							!empty( get_post_meta( $post_id , '_form_id', true ) )
@@ -261,7 +263,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 				case 'transaction_status' :
 					if( $data_ct ){
-							echo "<a href='".CF7PE_PRODUCT."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
+							echo "<a href='".esc_url(CF7PE_PRODUCT)."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
 					}else{
 						echo (
 							!empty( get_post_meta( $post_id , '_transaction_status', true ) )
@@ -273,7 +275,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 				case 'total' :
 					if( $data_ct ){
-							echo "<a href='".CF7PE_PRODUCT."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
+							echo "<a href='".esc_url(CF7PE_PRODUCT)."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
 					}else{
 
 						echo ( !empty( get_post_meta( $post_id , '_total', true ) ) ? get_post_meta( $post_id , '_total', true ) : '' ) .' ' .
@@ -284,13 +286,14 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			}
 		}
 
+		
 		/**
 		* check data ct
 		*/
 		function cfsazw_check_data_ct( $post_id ){
-			$data = unserialize( get_post_meta( $post_id, '_form_data', true ) );
-			if( !empty( get_post_meta( $post_id, '_form_data', true ) ) && isset( $data['_exceed_num_cfsazw'] ) && !empty( $data['_exceed_num_cfsazw'] ) ){
-				return $data['_exceed_num_cfsazw'];
+			$data = unserialize(get_post_meta( $post_id, '_form_data', true ));
+			if( !empty( get_post_meta( $post_id, '_form_data', true ) ) && isset( $data['_exceed_num_cfpezw'] ) && !empty( $data['_exceed_num_cfpezw'] ) ){
+				return $data['_exceed_num_cfpezw'];
 			}else{
 				return '';
 			}
@@ -357,12 +360,12 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		 */
 		function cfpe_show_from_data( $post ) {
 			$fields = CF7PE()->lib->data_fields;
-
+			
 			$form_id = get_post_meta( $post->ID, '_form_id', true );
-			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post->ID ) );
+			$data_ct = $this->cfsazw_check_data_ct( sanitize_text_field( $post->ID ) ); 
 			$_paymen_type = get_post_meta($post->ID, '_paymen_type', true );
 			$subscription_canceled = get_post_meta($post->ID , 'subscription_canceled', true );
-			$_agreement_Id = get_post_meta($post->ID, '_agreement_Id', true );
+			//$_agreement_Id = get_post_meta($post->ID, '_agreement_Id', true );
 			echo '<table class="cf7sa-box-data form-table">' .
 				'<style>.inside-field td, .inside-field th{ padding-top: 5px; padding-bottom: 5px;} .postbox table.form-table{ word-break: break-all; }</style>';
 
@@ -370,8 +373,8 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 					if( $data_ct ){
 
-						echo'<tr class="inside-field"><th scope="row">You are using Accept Stripe Payments Using Contact Form 7 - no license needed. Enjoy! 🙂</th></tr>';
-							echo'<tr class="inside-field"><th scope="row"><a href="https://www.zealousweb.com/wordpress-plugins/accept-stripe-payments-using-contact-form-7/" target="_blank">To unlock more features consider upgrading to PRO.</a></th></tr>';
+						echo'<tr class="inside-field"><th scope="row">You are using Accept PayPal Payments using Contact Form 7 - no license needed. Enjoy! 🙂</th></tr>';
+							echo'<tr class="inside-field"><th scope="row"><a href="https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7-pro" target="_blank">To unlock more features consider upgrading to PRO.</a></th></tr>';
 
 					}else{
 						$attachment = ( !empty( get_post_meta( $post->ID, '_attachment', true ) ) ? '' : '' );
@@ -495,7 +498,6 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 								if(empty($_paymen_type)) {
 									$transaction_status_get = '';
 									$transaction_status_get = get_post_meta($post->ID, '_transaction_status', true );
-									//if(empty($_agreement_Id)) {
 										if($transaction_status_get != 'cancel') {
 											$transaction_id = get_post_meta($post->ID, '_transaction_id', true );
 											echo '<tr class="form-field">' .
@@ -515,7 +517,6 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 												}
 											'<tr>';	
 										}
-									//}
 								}						
 							}
 							
@@ -539,9 +540,9 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				apply_filters(
 					CF7PE_PREFIX . '/help/cf7pe_data/postbox',
 					'<ol>' .
-						'<li><a href="https://www.zealousweb.com/documentation/accept-paypal-payments-using-contact-form-7/" target="_blank">Refer the document.</a></li>' .
+						'<li><a href="https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7" target="_blank">Refer the document.</a></li>' .
 						'<li><a href="https://www.zealousweb.com/contact/" target="_blank">Contact Us</a></li>' .
-						'<li><a href="mailto:opensource@zealousweb.in">Email us</a></li>' .
+						'<li><a href="mailto:support@zealousweb.com">Email us</a></li>' .
 					'</ol>'
 				) .
 			'</div>';

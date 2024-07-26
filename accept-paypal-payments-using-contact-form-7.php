@@ -55,8 +55,32 @@ if ( !defined( 'CF7PE_PREFIX' ) ) {
 }
 
 if ( !defined( 'CF7PE_PRODUCT' ) ) {
-	define( 'CF7PE_PRODUCT', 'https://www.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7/' );
+	define( 'CF7PE_PRODUCT', 'https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7-pro' );
 }
+
+if ( !defined( 'CF7PE_SANDBOX_TKL' ) ) {
+	define( 'CF7PE_SANDBOX_TKL', 'https://api.sandbox.paypal.com/v1/oauth2/token' );
+}
+
+if ( !defined( 'CF7PE_SANDBOX_PMT' ) ) {
+	define( 'CF7PE_SANDBOX_PMT', 'https://api.sandbox.paypal.com/v1/payments/payment/' );
+}
+
+if ( !defined( 'CF7PE_SANDBOX_SALE' ) ) {
+	define( 'CF7PE_SANDBOX_SALE', 'https://api.sandbox.paypal.com/v1/payments/sale/' );
+}
+if ( !defined( 'CF7PE_LIVE_TKL' ) ) {
+	define( 'CF7PE_LIVE_TKL', 'https://api.paypal.com/v1/oauth2/token' );
+}
+
+if ( !defined( 'CF7PE_LIVE_PMT' ) ) {
+	define( 'CF7PE_LIVE_PMT', 'https://api.paypal.com/v1/payments/payment/' );
+}
+
+if ( !defined( 'CF7PE_LIVE_SALE' ) ) {
+	define( 'CF7PE_LIVE_SALE', 'https://api.paypal.com/v1/payments/sale/' );
+}
+
 
 /**
  * Initialize the main class

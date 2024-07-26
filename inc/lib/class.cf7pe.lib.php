@@ -59,7 +59,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			'_form_data'            => 'Form data',
 			'_transaction_response' => 'Transaction response',
 			'_transaction_status'   => 'Transaction status',
-			'_recurring_payment'   => 'Recurring Payment',
 			'_paymen_type'   => 'Payment type',
 			'_refund_payment'   => 'Refund Payment',
 		);
@@ -129,11 +128,12 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				return $frm_data;
 			}, 10, 5 );
 			
-			if (isset($from_data->contact_form) && $from_data->contact_form instanceof WPCF7_ContactForm) {
-				$form_ID = $from_data->contact_form->id();
-			}
-			$email  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
-			$email = !empty($email) && array_key_exists($email, $posted_data) ? $posted_data[$email] : '';
+			// if (isset($from_data->contact_form) && $from_data->contact_form instanceof WPCF7_ContactForm) {
+			// 	$form_ID = $from_data->contact_form->id();
+			// }
+			// //print_r($from_data);die();
+			// $email  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
+			$email = !empty($email) && array_key_exists($email, $from_data) ? $from_data[$email] : '';
 			global $wpdb;
 
 			if ( $token ) {
@@ -159,7 +159,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				}
 
 			}
-
+			$exceed_ct	= sanitize_text_field( substr( get_option( '_exceed_cfpezw_l' ), 6 ) );
 			if ( !empty( $cf7pap_post_id ) ) {
 
 				$stored_data = ( !empty( $from_data ) ? $from_data->get_posted_data() : array() );
@@ -178,7 +178,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$quanity_val = ( ( !empty( $quantity ) && array_key_exists( $quantity, $stored_data ) ) ? floatval( $stored_data[$quantity] ) : '' );
 				
 				// recurring data get
-				$use_recurring_plan   = get_post_meta($form_ID, CF7PE_META_PREFIX . 'use_recurring_plan', true);
 				$amountPayable = (float) ( empty( $quanity_val ) ? $amount_val : ( $quanity_val * $amount_val ) );
 
 				if (
@@ -206,6 +205,24 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					}
 					$quanity_val = $qty_val;
 				}
+
+				//$stored_data = $posted_data;
+				unset( $stored_data['authorize'] );
+
+				if(!get_option('_exceed_cfpezw')){
+					sanitize_text_field( add_option('_exceed_cfpezw', '1') );
+				}else{
+					$exceed_val = sanitize_text_field( get_option( '_exceed_cfpezw' ) ) + 1;
+					update_option( '_exceed_cfpezw', $exceed_val );
+				}
+
+				if ( !empty( sanitize_text_field( get_option( '_exceed_cfpezw' ) ) ) && sanitize_text_field( get_option( '_exceed_cfpezw' ) ) > $exceed_ct ) {
+					$stored_data['_exceed_num_cfpezw'] = '1';
+				}
+
+				if(!get_option('_exceed_cfpezw_l')){
+					add_option('_exceed_cfpezw_l', 'cfpezw10');
+				}
 				add_post_meta( $cf7pap_post_id, '_email', $email );
 				add_post_meta( $cf7pap_post_id, '_form_id', $form_ID );
 				add_post_meta( $cf7pap_post_id, '_payer_email', ( !empty( $payment ) ? $payment->getPayer()->getPayerInfo()->getEmail() : '' ) );
@@ -214,29 +231,20 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				add_post_meta( $cf7pap_post_id, '_quantity', $quanity_val );
 				add_post_meta( $cf7pap_post_id, '_request_Ip', $this->getUserIpAddr() );
 				add_post_meta( $cf7pap_post_id, '_currency', $currency );
-				add_post_meta( $cf7pap_post_id, '_form_data', serialize( $stored_data ) );
+				add_post_meta( $cf7pap_post_id, '_form_data', serialize($stored_data) );
 				add_post_meta( $cf7pap_post_id, '_attachment', $attachent );
 				add_post_meta( $cf7pap_post_id, '_transaction_response', ( !empty( $payment ) ? json_decode($payment) : '' ) );
+				add_post_meta( $cf7pap_post_id, '_invoice_no', ( !empty( $payment ) ? $payment->transactions[0]->invoice_number : '' ) );
+				add_post_meta( $cf7pap_post_id, '_total', ( !empty( $payment ) ? $payment->transactions[0]->amount->total : $amountPayable ) );
+				add_post_meta( $cf7pap_post_id, '_transaction_status', ( !empty( $payment ) ?  $payment->getState() : 'cancel' ) );
 				
-				/* Start API Responsive ADD post type cf7pap_data */
-
-				if(!empty($use_recurring_plan)) {
-					// Set some example data for the payment.
-					add_post_meta( $cf7pap_post_id, '_agreement_Id',( !empty( $payment ) ? $payment->getId() : '' ));
-					add_post_meta( $cf7pap_post_id, '_total', ( !empty( $payment ) ? $amountPayable : $amountPayable ) );
-					add_post_meta( $cf7pap_post_id, '_invoice_no', ( !empty( $payment ) ? '' : '' ) );
-					add_post_meta( $cf7pap_post_id, '_transaction_status', ( !empty( $payment ) ?  'approved' : 'cancel' ) );
-				}else{
-					add_post_meta( $cf7pap_post_id, '_invoice_no', ( !empty( $payment ) ? $payment->transactions[0]->invoice_number : '' ) );
-					add_post_meta( $cf7pap_post_id, '_total', ( !empty( $payment ) ? $payment->transactions[0]->amount->total : $amountPayable ) );
-					add_post_meta( $cf7pap_post_id, '_transaction_status', ( !empty( $payment ) ?  $payment->getState() : 'cancel' ) );
-				}
-				/* End API Responsive ADD post type cf7pap_data */
+				
 			}
 
 			set_transient( CF7PE_META_PREFIX . 'post_entry_id' . $invoiceNumber, $cf7pap_post_id, (60 * 60 * 24) );
 
 		}
+
 		/**
 		 * - Refund payment
 		 */
@@ -264,15 +272,15 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			if( $mode_sandbox ){
 				$client_id = $sandbox_client_id;
 				$client_secret = $sandbox_client_secret;
-				$curl_token_url = 'https://api.sandbox.paypal.com/v1/oauth2/token';
-				$curl_sale_url = 'https://api.sandbox.paypal.com/v1/payments/payment/';
-				$curl_refund_url = 'https://api.sandbox.paypal.com/v1/payments/sale/';
+				$curl_token_url = CF7PE_SANDBOX_TKL;
+				$curl_sale_url = CF7PE_SANDBOX_PMT;
+				$curl_refund_url = CF7PE_SANDBOX_SALE;
 			}else{
 				$client_id = $live_client_id;
 				$client_secret = $live_client_secret;
-				$curl_token_url = 'https://api.paypal.com/v1/oauth2/token';
-				$curl_sale_url = 'https://api.paypal.com/v1/payments/payment/';
-				$curl_refund_url = 'https://api.paypal.com/v1/payments/sale/';
+				$curl_token_url = CF7PE_LIVE_TKL;
+				$curl_sale_url = CF7PE_LIVE_PMT;
+				$curl_refund_url = CF7PE_LIVE_SALE;
 			}
 		
 			/* Get PayPal access token via cURL */
@@ -364,7 +372,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$from_data = unserialize( $_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] );
 				$form_ID = $from_data->get_contact_form()->id();
 				
-				do_action( CF7PE_PREFIX . '/paypal/save/data', $from_data, $token = $_GET['token' ], $payment = '', $invoiceNumber );
+				do_action( CF7PE_PREFIX . '/paypal/save/data', $from_data, $token = $_GET['token' ], $payment = '', $invoiceNumber,$form_ID );
 
 				add_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
 				remove_filter( 'wpcf7_mail_components', array( $this, 'filter__wpcf7_mail_components' ), 888, 3 );
@@ -496,36 +504,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				
 				do_action( CF7PE_PREFIX . '/paypal/save/data', $from_data, $token = $_GET['token' ], $payment, $invoiceNumber );
 
-				//post type
-
-				/*$sa_post_id = wp_insert_post( array (
-					'post_type' => 'cf7pe_data',
-					'post_title' => ( !empty( $email ) ? $email : $payment->transactions[0]->invoice_number ), // email/invoice_no
-					'post_status' => 'publish',
-					'comment_status' => 'closed',
-					'ping_status' => 'closed',
-				) );
-
-				if ( !empty( $sa_post_id ) ) {
-					
-					add_post_meta( $sa_post_id, '_form_id', $form_ID );
-					add_post_meta( $sa_post_id, '_email', $email );
-					add_post_meta( $sa_post_id, '_transaction_id', $payment->getId());
-					add_post_meta( $sa_post_id, '_invoice_no', $payment->transactions[0]->invoice_number );
-					add_post_meta( $sa_post_id, '_amount',$amount_val);
-					add_post_meta( $sa_post_id, '_quantity', $quanity_val );
-					add_post_meta( $sa_post_id, '_total', ($amountPayable) );
-					add_post_meta( $sa_post_id, '_request_Ip', $this->getUserIpAddr() );
-					add_post_meta( $sa_post_id, '_currency', $currency );
-					add_post_meta( $sa_post_id, '_form_data', $form_data_pe);
-					add_post_meta( $sa_post_id, '_transaction_response', $payment_json);
-					add_post_meta( $sa_post_id, '_transaction_status', $payment->getState() );
-					add_post_meta( $sa_post_id, '_attachment', $attachment );
-					add_post_meta( $sa_post_id, '_paymen_type',$payment_type);
-
-				}*/
-				
-
 			}
 		}
 
@@ -611,6 +589,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 
 			$submission    = WPCF7_Submission::get_instance(); // CF7 Submission Instance
 			$form_ID       = $contact_form->id();
+		
 			$form_instance = WPCF7_ContactForm::get_instance($form_ID); // CF7 From Instance
 
 			if ( $submission ) {
@@ -635,7 +614,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$description            = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'description', true );
 				$success_returnURL      = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'success_returnurl', true );
 				$cancle_returnURL       = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'cancel_returnurl', true );
-				$mail                  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
+				$mail                   = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
 				// Set some example data for the payment.
 				$currency               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
 				
