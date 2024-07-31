@@ -77,8 +77,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			add_action( 'wpcf7_init', array( $this, 'action__wpcf7_verify_version' ), 10, 0 );
 			
 			// Refund payment functionality
-			add_action('wp_ajax_action__refund_payment' ,array( $this, 'action__refund_payment'));
-			add_action('wp_ajax_nopriv_action__refund_payment', array( $this,'action__refund_payment')) ;
+			add_action('wp_ajax_action__refund_payment_free' ,array( $this, 'action__refund_payment_free'));
+			add_action('wp_ajax_nopriv_action__refund_payment_free', array( $this,'action__refund_payment_free')) ;
 		}
 
 		/*
@@ -206,8 +206,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					$quanity_val = $qty_val;
 				}
 
-				//$stored_data = $posted_data;
-				unset( $stored_data['authorize'] );
 
 				if(!get_option('_exceed_cfpezw')){
 					sanitize_text_field( add_option('_exceed_cfpezw', '1') );
@@ -248,7 +246,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		/**
 		 * - Refund payment
 		 */
-		function action__refund_payment() {
+		function action__refund_payment_free() {
 
 			$enable_log = trim( get_option( '' . CF7PE_META_PREFIX . 'enable_log' ) );
 			$contact_form_id = '';
@@ -523,7 +521,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			}
 
 		}
-/**
+		/**
 		 * Get the attachment upload directory from plugin.
 		 *
 		 * @method zw_wpcf7_upload_tmp_dir

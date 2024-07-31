@@ -26,7 +26,7 @@ if ( !class_exists( 'CF7PE_Admin_Filter' ) ) {
 			add_filter( 'post_row_actions',    array( $this, 'filter__post_row_actions' ), 10, 3 );
 			add_filter( 'manage_edit-cf7pe_data_sortable_columns', array( $this, 'filter__manage_cf7pe_data_sortable_columns' ), 10, 3 );
 			add_filter( 'manage_cf7pe_data_posts_columns',         array( $this, 'filter__manage_cf7pe_data_posts_columns' ), 10, 3 );
-
+			add_filter( 'plugin_action_links',array( $this,'filter__admin_plugin_links'), 10, 2 ); 
 		}
 
 		/*
@@ -150,6 +150,24 @@ if ( !class_exists( 'CF7PE_Admin_Filter' ) ) {
 			require_once( CF7PE_DIR .  '/inc/admin/template/' . CF7PE_PREFIX . '.template.php' );
 
 		}
+		 /**
+        * add documentation link in plugins
+        */
+
+        function filter__admin_plugin_links( $links, $file ) {
+            if ( $file != CF7PE_PLUGIN_BASENAME ) {
+                return $links;
+            }
+        
+            if ( ! current_user_can( 'wpcf7_read_contact_forms' ) ) {
+                return $links;
+            }
+            
+            $documentLink = '<a target="_blank" href="https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7">' . __( 'Document Link', 'accept-paypal-payments-using-contact-form-7' ) . '</a>';
+            array_unshift( $links , $documentLink);
+        
+            return $links;
+        }
 
 	}
 

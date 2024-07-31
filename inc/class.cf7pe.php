@@ -145,6 +145,9 @@ if ( !class_exists( 'CF7PE' ) ) {
 		 */
 		function action__update_option_active_plugins() {
 			deactivate_plugins( 'contact-form-7-paypal-addons-pro/contact-form-7-paypal-addons-pro.php', true );
+			if(!get_option('_exceed_cfpezw_l')){
+				add_option('_exceed_cfpezw_l', 'cfpezw10');
+			}
 		}
 
 		/**

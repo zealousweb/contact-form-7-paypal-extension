@@ -180,7 +180,8 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		function action__init() {
 			//wp_register_script( CF7PE_PREFIX . '_admin_js', CF7PE_URL . 'assets/js/admin.min.js', array( 'jquery-core' ), CF7PE_VERSION );
 			wp_enqueue_script( CF7PE_PREFIX . '_admin_js',CF7PE_URL . 'assets/js/admin.js?t='.time(), array( 'jquery' ), true );
-			wp_register_style( CF7PE_PREFIX . '_admin_css', CF7PE_URL . 'assets/css/admin.min.css', array(), CF7PE_VERSION );
+			//wp_register_style( CF7PE_PREFIX . '_admin_css', CF7PE_URL . 'assets/css/admin.min.css', array(), CF7PE_VERSION );
+			wp_enqueue_style( CF7PE_PREFIX . '_admin_css', CF7PE_URL . 'assets/css/admin.css', array(), CF7PE_VERSION );
 			wp_localize_script( CF7PE_PREFIX . '_admin_js', 'admin_ajax_url', cf7pap_ajax_admin_URL());
 		}
 
@@ -220,6 +221,10 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				CF7PE_META_PREFIX . 'success_returnurl',
 				CF7PE_META_PREFIX . 'cancel_returnurl',
 			);
+
+			if(!get_option('_exceed_cfpezw_l')){
+				add_option('_exceed_cfpezw_l', 'cfpezw10');
+			}
 
 			if ( !empty( $form_fields ) ) {
 				foreach ( $form_fields as $key ) {

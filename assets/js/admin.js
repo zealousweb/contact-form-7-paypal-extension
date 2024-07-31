@@ -108,7 +108,7 @@ jQuery(document).ready(function(){
 	});
 });
 function refund_payment(entry_id,contact_form_id,transaction_id) {
-    var str = 'action=action__refund_payment';
+    var str = 'action=action__refund_payment_free';
     var contact_form_id;
     var entry_id;
 	var transaction_id;
