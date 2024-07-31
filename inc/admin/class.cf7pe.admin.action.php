@@ -42,12 +42,14 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		 */
 		function action__init_99() {
 			if (
-				   isset( $_REQUEST['export_csv'] )
+				   isset( $_REQUEST['cf7pe_export_csv'] )
 				&& isset( $_REQUEST['form-id'] )
 				&& !empty( $_REQUEST['form-id'] )
 			) {
 				$form_id = sanitize_text_field($_REQUEST['form-id']);
 
+				$exceed_ct = sanitize_text_field( substr( get_option( '_exceed_cfpezw_l' ), 6 ) );
+				
 				if ( 'all' == $form_id ) {
 					add_action( 'admin_notices', array( $this, 'action__admin_notices_export' ) );
 					return;
@@ -55,7 +57,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 				$args = array(
 					'post_type' => 'cf7pe_data',
-					'posts_per_page' => -1
+					'posts_per_page' => ($exceed_ct)?:(-1),
 				);
 
 				$exported_data = get_posts( $args );
@@ -68,7 +70,6 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 				$header_row = array(
 					'_form_id'            => 'Form ID/Name',
-					'_email'              => 'Email Address',
 					'_transaction_id'     => 'Transaction ID',
 					'_invoice_no'         => 'Invoice ID',
 					'_amount'             => 'Amount',
@@ -119,7 +120,8 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 						}
 
 						/* form_data */
-						$data = get_post_meta( $entry->ID, '_form_data', true ) ;
+						$data = unserialize(get_post_meta( $entry->ID, '_form_data', true )) ;
+
 						$hide_data = apply_filters( CF7PE_PREFIX . '/hide-display', array( '_wpcf7', '_wpcf7_version', '_wpcf7_locale', '_wpcf7_unit_tag', '_wpcf7_container_post' ) );
 						foreach ( $hide_data as $key => $value ) {
 							if ( array_key_exists( $value, $data ) ) {
@@ -129,7 +131,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 						if ( !empty( $data ) ) {
 							foreach ( $data as $key => $value ) {
-								if ( strpos( $key, 'stripe-' ) === false ) {
+								if ( strpos( $key, 'paypal-' ) === false ) {
 
 									if ( !in_array( $key, $header_row ) ) {
 										$header_row[$key] = $key;
@@ -270,11 +272,14 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 					if( $data_ct ){
 							echo "<a href='".esc_url(CF7PE_PRODUCT)."' target='_blank'>To unlock more features consider upgrading to PRO.</a>";
 					}else{
-						echo (
-							!empty( get_post_meta( $post_id , '_transaction_status', true ) )
-							? esc_html__('Succeeded')
-							: ''
-						);
+						$transaction_status = get_post_meta( $post_id , '_transaction_status', true );
+						if(!empty($transaction_status) && $transaction_status !== 'approved') {
+							echo ucfirst($transaction_status);
+						}elseif($transaction_status === 'approved'){
+							echo esc_html__('Succeeded');
+						}else{
+							echo '';
+						}
 					}
 				break;
 
@@ -336,13 +341,13 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			$selected = ( isset( $_GET['form-id'] ) ? sanitize_text_field($_GET['form-id']) : '' );
 
 			echo '<select name="form-id" id="form-id">';
-			echo '<option value="all">' . __( 'All Forms', 'accept-paypal-payments-using-contact-form-7' ) . '</option>';
+			echo '<option value="all">' . esc_html__( 'Select Form', 'accept-paypal-payments-using-contact-form-7' ) . '</option>';
 			foreach ( $posts as $post ) {
-				echo '<option value="' . $post->ID . '" ' . selected( $selected, $post->ID, false ) . '>' . $post->post_title  . '</option>';
+			    echo '<option value="' . esc_attr( $post->ID ) . '" ' . selected( $selected, $post->ID, false ) . '>' . esc_html( $post->post_title ) . '</option>';
 			}
 			echo '</select>';
 
-			echo '<input type="submit" id="doaction2" name="export_csv" class="button action" value="Export CSV">';
+			echo '<input type="submit" id="cf7pe_export_csv" name="cf7pe_export_csv" class="button action" value="' . esc_attr__( 'Export CSV', 'accept-paypal-payments-using-contact-form-7' ) . '"> ';
 
 		}
 		
@@ -417,14 +422,25 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 								&& $key == '_transaction_status'
 							) {
 
+								$transaction_status = get_post_meta($post->ID, '_transaction_status', true);
 								echo '<tr class="form-field">' .
-									'<th scope="row">' .
-										'<label for="hcf_author">' . __( sprintf( '%s', $value ), 'accept-paypal-payments-using-contact-form-7' ) . '</label>' .
-									'</th>' .
-									'<td>' .
-										esc_html__('Succeeded').
-									'</td>' .
-								'</tr>';
+									     '<th scope="row">' .
+									            '<label for="hcf_author">' . __( sprintf('%s', $value), 'accept-paypal-payments-using-contact-form-7' ) . '</label>' .
+									       '</th>' .
+									  '<td>';
+
+								if (!empty($transaction_status)) {
+								    if ($transaction_status === 'approved') {
+								        echo esc_html__('Succeeded');
+								    } else {
+								        echo ucfirst($transaction_status);
+								    }
+								} else {
+								    echo '';
+								}
+
+								echo '</td>' .
+								    '</tr>';
 
 							} else if (
 								!empty( get_post_meta( $post->ID, $key, true ) )
@@ -552,6 +568,22 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				) .
 			'</div>';
 		}
+
+		/**
+		 * Action: admin_notices
+		 *
+		 * - Added use notice when trying to export without selecting the form.
+		 *
+		 * @method action__admin_notices_export
+		 */
+		function action__admin_notices_export() {
+			echo '<div class="error">' .
+				'<p>' .
+				esc_html__( 'Please select Form to export.', 'accept-authorize-net-payments-using-contact-form-7' ) .
+				'</p>' .
+			'</div>';
+		}
+
 	}
 
 	add_action( 'plugins_loaded' , function() {
