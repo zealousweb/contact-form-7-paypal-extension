@@ -272,7 +272,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 					}else{
 						echo (
 							!empty( get_post_meta( $post_id , '_transaction_status', true ) )
-							? ucfirst( get_post_meta( $post_id , '_transaction_status', true ) )
+							? esc_html__('Succeeded')
 							: ''
 						);
 					}
@@ -422,7 +422,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 										'<label for="hcf_author">' . __( sprintf( '%s', $value ), 'accept-paypal-payments-using-contact-form-7' ) . '</label>' .
 									'</th>' .
 									'<td>' .
-										ucfirst( get_post_meta( $post->ID , $key, true ) ) .
+										esc_html__('Succeeded').
 									'</td>' .
 								'</tr>';
 
