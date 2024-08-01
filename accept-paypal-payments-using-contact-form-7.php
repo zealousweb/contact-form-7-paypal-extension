@@ -3,7 +3,7 @@
  * Plugin Name: Accept PayPal Payments using Contact Form 7
  * Plugin URL: https://wordpress.org/plugins/accept-paypal-payments-using-contact-form-7/
  * Description: This plugin will integrate PayPal submit button which redirects you to PayPal website for making your payments after submitting the form. <strong>PRO Version is available now.</strong>
- * Version: 4.0.1
+ * Version: 4.0.0
  * Author: ZealousWeb
  * Author URI: https://www.zealousweb.com
  * Developer: The Zealousweb Team
@@ -27,7 +27,7 @@ if ( !defined( 'ABSPATH' ) ) exit;
  */
 
 if ( !defined( 'CF7PE_VERSION' ) ) {
-	define( 'CF7PE_VERSION', '4.0.1' ); // Version of plugin
+	define( 'CF7PE_VERSION', '4.0.0' ); // Version of plugin
 }
 
 if ( !defined( 'CF7PE_FILE' ) ) {

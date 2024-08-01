@@ -66,6 +66,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 			 $labels = array(
 				'name' => __( 'Paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
 				'singular_name' => __( 'Paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
+				'not_found'          => __( 'No Transactions Found.', 'accept-paypal-payments-using-contact-form-7' ),
 			);
 
 			$args = array(

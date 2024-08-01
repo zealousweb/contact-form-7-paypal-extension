@@ -6,11 +6,11 @@ Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
 Tested up to: 6.5
 Requires PHP: 5.6
-Stable tag: 4.0.1
+Stable tag: 4.0.0
 License: GPLv3 or later License
 CF7 requires at least: 3.0
 CF7 tested up to: 5.8
-Version: 4.0.1
+Version: 4.0.0
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Integrate PayPal Submit button in Contact Form 7 to Enjoy Quick Online Payments.
@@ -98,7 +98,7 @@ No, you can use a Standard PayPal account.
 
 == Changelog ==
 
-= 4.0.1 =
+= 4.0.0 =
 * Added an admin listing for successful PayPal transactions and form data.
 * Implemented a refund button in the admin panel.
 

@@ -162,9 +162,10 @@ if ( !class_exists( 'CF7PE_Admin_Filter' ) ) {
             if ( ! current_user_can( 'wpcf7_read_contact_forms' ) ) {
                 return $links;
             }
-            
-            $documentLink = '<a target="_blank" href="https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7">' . __( 'Document Link', 'accept-paypal-payments-using-contact-form-7' ) . '</a>';
-            array_unshift( $links , $documentLink);
+			// Add your donation link
+			$documentLink = '<a target="_blank" href="https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7">' . __( 'Document Link', 'accept-paypal-payments-using-contact-form-7' ) . '</a>';
+			$donateLink = '<a target="_blank" href="http://www.zealousweb.com/payment/">' . __( 'Donate', 'accept-paypal-payments-using-contact-form-7' ) . '</a>';
+            array_unshift( $links ,$documentLink,$donateLink);
         
             return $links;
         }

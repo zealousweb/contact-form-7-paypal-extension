@@ -29,25 +29,53 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			add_action( 'wpcf7_save_contact_form', array( $this, 'action__wpcf7_save_contact_form' ), 20, 2 );
 			add_action( 'manage_cf7pe_data_posts_custom_column', array( $this, 'action__manage_cf7pe_data_posts_custom_column' ), 10, 2 );
 			add_action( 'restrict_manage_posts', array( $this, 'action__restrict_manage_posts' ) );
-			
-			
+			add_action( 'parse_query', array( $this, 'action__parse_query_cf7pe' ) );
+		}
+		/**
+		 * Action: parse_query
+		 *
+		 * - Filter data by form id.
+		 *
+		 * @method action__parse_query_cf7pe
+		 *
+		 * @param  object $query WP_Query
+		 */
+		function action__parse_query_cf7pe( $query ) {
+			if (
+				! is_admin()
+				|| !in_array ( $query->get( 'post_type' ), array( 'cf7pe_data' ) )
+			)
+				return;
+
+			if (
+				is_admin()
+				&& isset( $_GET['form-id'] )
+				&& 'all' != $_GET['form-id']
+			) {
+				$query->query_vars['meta_key']     = '_form_id';
+				$query->query_vars['meta_value']   = $_GET['form-id'];
+				$query->query_vars['meta_compare'] = '=';
+			} elseif ( isset( $_GET['form-id'] ) && 'all' == $_GET['form-id'] ) {
+				add_action( 'admin_notices', array( $this, 'action__admin_notices_export' ) );
+				return;
+			}
 
 		}
-
-			/**
+		/**
 		 * Action: init 99
 		 *
 		 * - Used to perform the CSV export functionality.
 		 *
 		 */
 		function action__init_99() {
+		
 			if (
 				   isset( $_REQUEST['cf7pe_export_csv'] )
 				&& isset( $_REQUEST['form-id'] )
 				&& !empty( $_REQUEST['form-id'] )
 			) {
+				
 				$form_id = sanitize_text_field($_REQUEST['form-id']);
-
 				$exceed_ct = sanitize_text_field( substr( get_option( '_exceed_cfpezw_l' ), 6 ) );
 				
 				if ( 'all' == $form_id ) {
