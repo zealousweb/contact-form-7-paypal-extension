@@ -55,8 +55,8 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				$query->query_vars['meta_key']     = '_form_id';
 				$query->query_vars['meta_value']   = $_GET['form-id'];
 				$query->query_vars['meta_compare'] = '=';
-			} elseif ( isset( $_GET['form-id'] ) && 'all' == $_GET['form-id'] ) {
-				add_action( 'admin_notices', array( $this, 'action__admin_notices_export' ) );
+			} elseif ( isset( $_GET['form-id'] ) && 'all' == $_GET['form-id'] && !isset( $_REQUEST['cf7pe_export_csv'] )) {
+				add_action( 'admin_notices', array( $this, 'action__admin_notices_export_not_found' ) );
 				return;
 			}
 
@@ -85,7 +85,9 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 				$args = array(
 					'post_type' => 'cf7pe_data',
-					'posts_per_page' => ($exceed_ct)?:(-1),
+					'posts_per_page' => 10,
+					'post_status' => 'publish',
+					'order'          => 'ASC',  // DESC for descending order (latest first)
 				);
 
 				$exported_data = get_posts( $args );
@@ -137,9 +139,14 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 								} else if ( $key == '_transaction_status' ) {
 
-									$row[$key] = __(
-										get_post_meta( $entry->ID , $key, true )
-									);
+									$transaction_status = get_post_meta($entry->ID, $key, true);
+									if (!empty($transaction_status) && $transaction_status !== 'approved') {
+										$row[$key] = ucfirst($transaction_status); // Capitalize first letter of status
+									} elseif ($transaction_status === 'approved') {
+										$row[$key] = esc_html__('Succeeded'); // Display 'Succeeded' for approved transactions
+									} else {
+										$row[$key] = ''; // Empty string if no status
+									}
 
 								} else if ( '_submit_time' == $key ) {
 									$row[$key] = __( get_the_date( 'd, M Y H:i:s', $entry->ID ) );
@@ -607,7 +614,22 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 		function action__admin_notices_export() {
 			echo '<div class="error">' .
 				'<p>' .
-				esc_html__( 'Please select Form to export.', 'accept-authorize-net-payments-using-contact-form-7' ) .
+				esc_html__( 'Please Select Form to Export.', 'accept-paypal-payments-using-contact-form-7' ) .
+				'</p>' .
+			'</div>';
+		}
+
+		/**
+		 * Action: admin_notices
+		 *
+		 * - Added use notice when trying to export without selecting the form.
+		 *
+		 * @method action__admin_notices_export_not_found
+		 */
+		function action__admin_notices_export_not_found() {
+			echo '<div class="error">' .
+				'<p>' .
+				esc_html__( 'Please Select to Form.', 'accept-paypal-payments-using-contact-form-7' ) .
 				'</p>' .
 			'</div>';
 		}
