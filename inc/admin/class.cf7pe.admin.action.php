@@ -128,7 +128,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				);
 
 				$data_rows = array();
-
+				$special_row_added = false;
 				if ( !empty( $exported_data ) ) {
 					foreach ( $exported_data as $entry ) {
 
@@ -181,11 +181,13 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 						}
 
 						// Check for _exceed_num_cfpezw and handle it
-						if (array_key_exists('_exceed_num_cfpezw', $data)) {
+						if (array_key_exists('_exceed_num_cfpezw', $data) && !$special_row_added) {
 							$special_row = array_fill_keys(array_keys($header_row), '');
 							$special_row['_transaction_id'] = "To unlock more export data, consider upgrading to PRO. Visit: " . esc_url(CF7PE_PRODUCT);
 							$data_rows[] = $special_row;
-			
+							
+							// Set the flag to true to prevent adding the special row again
+							$special_row_added = true;
 							// Skip adding other data for this entry
 							continue;
 						}
