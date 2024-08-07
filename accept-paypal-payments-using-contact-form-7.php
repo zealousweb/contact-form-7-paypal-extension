@@ -3,7 +3,7 @@
  * Plugin Name: Accept PayPal Payments using Contact Form 7
  * Plugin URL: https://wordpress.org/plugins/accept-paypal-payments-using-contact-form-7/
  * Description: This plugin will integrate PayPal submit button which redirects you to PayPal website for making your payments after submitting the form. <strong>PRO Version is available now.</strong>
- * Version: 3.9
+ * Version: 4.0.0
  * Author: ZealousWeb
  * Author URI: https://www.zealousweb.com
  * Developer: The Zealousweb Team
@@ -27,7 +27,7 @@ if ( !defined( 'ABSPATH' ) ) exit;
  */
 
 if ( !defined( 'CF7PE_VERSION' ) ) {
-	define( 'CF7PE_VERSION', '3.9' ); // Version of plugin
+	define( 'CF7PE_VERSION', '4.0.0' ); // Version of plugin
 }
 
 if ( !defined( 'CF7PE_FILE' ) ) {
@@ -53,6 +53,34 @@ if ( !defined( 'CF7PE_META_PREFIX' ) ) {
 if ( !defined( 'CF7PE_PREFIX' ) ) {
 	define( 'CF7PE_PREFIX', 'cf7pe' ); // Plugin prefix
 }
+
+if ( !defined( 'CF7PE_PRODUCT' ) ) {
+	define( 'CF7PE_PRODUCT', 'https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7-pro' );
+}
+
+if ( !defined( 'CF7PE_SANDBOX_TKL' ) ) {
+	define( 'CF7PE_SANDBOX_TKL', 'https://api.sandbox.paypal.com/v1/oauth2/token' );
+}
+
+if ( !defined( 'CF7PE_SANDBOX_PMT' ) ) {
+	define( 'CF7PE_SANDBOX_PMT', 'https://api.sandbox.paypal.com/v1/payments/payment/' );
+}
+
+if ( !defined( 'CF7PE_SANDBOX_SALE' ) ) {
+	define( 'CF7PE_SANDBOX_SALE', 'https://api.sandbox.paypal.com/v1/payments/sale/' );
+}
+if ( !defined( 'CF7PE_LIVE_TKL' ) ) {
+	define( 'CF7PE_LIVE_TKL', 'https://api.paypal.com/v1/oauth2/token' );
+}
+
+if ( !defined( 'CF7PE_LIVE_PMT' ) ) {
+	define( 'CF7PE_LIVE_PMT', 'https://api.paypal.com/v1/payments/payment/' );
+}
+
+if ( !defined( 'CF7PE_LIVE_SALE' ) ) {
+	define( 'CF7PE_LIVE_SALE', 'https://api.paypal.com/v1/payments/sale/' );
+}
+
 
 /**
  * Initialize the main class
