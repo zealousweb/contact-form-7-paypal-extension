@@ -189,7 +189,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 							// Set the flag to true to prevent adding the special row again
 							$special_row_added = true;
 							// Skip adding other data for this entry
-							continue;
+							break;
 						}
 						
 						if ( !empty( $data ) ) {
