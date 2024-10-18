@@ -3,6 +3,7 @@ The payment collection is possible with the form using this plugin. Accept PayPa
 You can make the payment once and all as there is no recurring payment option. This extension can surely add real value to WordPress sites seeking secure, quick online payment integration.
 
 **Features of Accept PayPal Payments Using Contact Form 7**
+
 - PayPal Refund Functionality: Integrated capability to process refunds through PayPal directly from the admin panel.
 - Limited Payment Response Details: Admin side store up to 10 recent PayPal payment response details for review.
 - Export Contact Form 7 payment data to CSV.
@@ -17,6 +18,7 @@ You can make the payment once and all as there is no recurring payment option. T
   [Learn more about the Pro version](https://store.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro)
 
   **Features of Accept PayPal Payments Using Contact Form 7 Pro**
+  
 We have released the PRO version of this plugin with extra advantageous features added.
 
 - 22 PayPal languages supported – Multilingual.
