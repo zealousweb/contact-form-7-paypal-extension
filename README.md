@@ -47,6 +47,7 @@ We have released the PRO version of this plugin with extra advantageous features
 * <strong>[Custom Product Options WooCommerce Pro](https://store.zealousweb.com/wordpress-plugins/custom-product-options-woocommerce-pro)</strong>
 
 **Getting Help With WordPress**
+
 If you have any questions about this plugin, you can post a thread in our WordPress.org forum. Please search existing threads before opening a new one or feel free to contact us at support@zealousweb.com
 
 We also offer custom WordPress extension development and WordPress theme design services to fulfill your e-commerce objectives.
