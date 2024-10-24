@@ -32,7 +32,7 @@ We have released the PRO version of this plugin with extra advantageous features
 - Admin can manage ‘Status’ of submitted data if PayPal payment has been successfully received.
 - Send email to user and admin for successful payment receipts with PayPal response details in the content.
 
-<strong>[Demo for Abandoned Contact Form 7 Pro](https://demo.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro/)</strong>
+<strong>[Demo for Accept PayPal Payments using Contact Form 7 Pro](https://demo.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro/)</strong>
 
 **OUR OTHER PLUGINS**
 
