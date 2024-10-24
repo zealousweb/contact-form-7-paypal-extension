@@ -55,10 +55,3 @@ We also offer custom WordPress extension development and WordPress theme design 
 Our professional impassioned WordPress experts provide profound and customer oriented development of your project within short timeframes.
 
 Thank you for choosing a Plugin developed by ZealousWeb!
-If you have any questions about this plugin, you can post a thread in our WordPress.org forum. Please search existing threads before opening a new one or feel free to contact us at support@zealousweb.com
-
-We also offer custom WordPress extension development and WordPress theme design services to fulfill your e-commerce objectives.
-
-Our professional impassioned WordPress experts provide profound and customer oriented development of your project within short timeframes.
-
-Thank you for choosing a Plugin developed by ZealousWeb!
