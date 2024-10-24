@@ -19,7 +19,7 @@ You can make the payment once and all as there is no recurring payment option. T
 
   [Learn more about the Pro version](https://store.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro)
 
-  **Features of Accept PayPal Payments Using Contact Form 7 Pro**
+**Features of Accept PayPal Payments Using Contact Form 7 Pro**
   
 We have released the PRO version of this plugin with extra advantageous features added.
 
