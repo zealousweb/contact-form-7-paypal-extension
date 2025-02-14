@@ -4,7 +4,7 @@ Contributors: zealopensource
 Tags: Contact Form 7, Paypal, paypal donation, online payment, contact form 7 paypal
 Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
-Tested up to: 6.5
+Tested up to: 6.6
 Requires PHP: 5.6
 Stable tag: 4.0.0
 License: GPLv3 or later License
@@ -22,7 +22,9 @@ The payment collection is possible with the form using this plugin. <br/><strong
 You can make the payment once and all as there is no recurring payment option.  This extension can surely add real value to WordPress sites seeking secure, quick online payment integration.
 
 = Features of Accept PayPal Payments Using Contact Form 7 =
-
+* PayPal Refund Functionality: Integrated capability to process refunds through PayPal directly from the admin panel.
+* Limited Payment Response Details: Admin side store up to 10 recent PayPal payment response details for review.
+* Export Contact Form 7 payment data to CSV.
 * PayPal payment with 25 currencies supported.
 * Option to Integrate multiple PayPal accounts in a single CF 7.
 * Can take values from all input fields.
@@ -89,6 +91,9 @@ That's it! Just configure your settings as you see fit, and you're on your way t
 1. PayPal Settings and Configuration
 2. PayPal Demo Form
 3. PayPal Amount field configuration
+4. PayPal Refund functionality
+5. Limited Payment Response Details: Admin side store up to 10 recent PayPal payment response details for review.
+6. Export Contact Form 7 payment data to CSV.
 
 == Frequently Asked Questions ==
 
@@ -101,6 +106,7 @@ No, you can use a Standard PayPal account.
 = 4.0.0 =
 * Added an admin listing for successful PayPal transactions and form data.
 * Implemented a refund button in the admin panel.
+* Export Contact Form 7 payment data to CSV.
 
 = 3.9 =
 * Improved compatibility with WordPress VIP platform by refactoring code to adhere to VIP coding standards.
