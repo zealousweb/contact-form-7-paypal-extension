@@ -4,13 +4,13 @@ Contributors: zealopensource
 Tags: Contact Form 7, Paypal, paypal donation, online payment, contact form 7 paypal
 Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
-Tested up to: 6.6
+Tested up to: 6.8
 Requires PHP: 5.6
-Stable tag: 4.0.1
+Stable tag: 4.0.2
 License: GPLv3 or later License
 CF7 requires at least: 3.0
 CF7 tested up to: 5.8
-Version: 4.0.1
+Version: 4.0.2
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Integrate PayPal Submit button in Contact Form 7 to Enjoy Quick Online Payments.
@@ -33,6 +33,8 @@ You can make the payment once and all as there is no recurring payment option.  
 * ‘Return URL’ and ‘Cancel URL’ options for payment success and cancellation facility.
 * Compatibility of WordPress VIP.
 
+<strong>[Demo for Accept PayPal Payments using Contact Form 7](https://demo.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7/)</strong>
+
 = Features of Accept PayPal Payments Using Contact Form 7 Pro =
 
 We have released the PRO version of this plugin with extra advantageous features added.
@@ -46,20 +48,23 @@ We have released the PRO version of this plugin with extra advantageous features
 * Admin can manage ‘Status’ of submitted data if PayPal payment has been successfully received.
 * Send email to user and admin for successful payment receipts with PayPal response details in the content.
 
-<strong>[Demo for Contact 7- PayPal Extension Pro](http://store.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro)</strong>
-<strong>[Documentation](https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7-pro)</strong>
 <strong>[Get more information of Pro version here](https://store.zealousweb.com/accept-paypal-payments-using-contact-form-7-pro)</strong>
+<strong>[Demo for Accept PayPal Payments using Contact Form 7 Pro](https://demo.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro/)</strong>
 
 == OUR OTHER PLUGINS ==
 
-* <strong>[Accept Stripe Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-stripe-payments-using-contact-form-7-pro)</strong>
-* <strong>[Accept Authorize.NET Payments Using Contact Form 7 Pro](https://store.zealousweb.com/accept-authorize-net-payments-using-contact-form-7)</strong>
-* <strong>[Accept Elavon Payments Using Contact Form 7 Pro](https://store.zealousweb.com/accept-elavon-payments-using-contact-form-7-pro)</strong>
-* <strong>[Accept 2Checkout Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-2checkout-payments-using-contact-form-7-pro)</strong>
-* <strong>[Accept Sage Pay Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-sage-pay-payments-using-contact-form-7-pro)</strong>
-* <strong>[User Registration Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/user-registration-using-contact-form-7-pro)</strong>
 * <strong>[Abandoned Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/abandoned-contact-form-7-pro)</strong>
+* <strong>[Accept 2 Checkout Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-2checkout-payments-using-contact-form-7-pro)</strong>
+* <strong>[Accept Authorize.NET Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-authorize-net-payments-using-contact-form-7-pro)</strong>
+* <strong>[Accept Elavon Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-elavon-payments-using-contact-form-7-pro)</strong>
+* <strong>[Accept PayPal Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7-pro)</strong>
+* <strong>[Accept Sagepay(Opayo) Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-sage-pay-opayo-payments-using-contact-form-7-pro)</strong>
+* <strong>[Accept Stripe Payments Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/accept-stripe-payments-using-contact-form-7-pro)</strong>
 * <strong>[Custom Product Options WooCommerce Pro](https://store.zealousweb.com/wordpress-plugins/custom-product-options-woocommerce-pro)</strong>
+* <strong>[Generate PDF Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/generate-pdf-using-contact-form-7-pro)</strong>
+* <strong>[Smart Appointment & Booking Pro](https://store.zealousweb.com/wordpress-plugins/smart-appointment-booking-pro)</strong>
+* <strong>[Smart Showcase for Google Reviews Pro](https://store.zealousweb.com/wordpress-plugins/smart-showcase-for-google-reviews-pro)</strong>
+* <strong>[User Registration Using Contact Form 7 Pro](https://store.zealousweb.com/wordpress-plugins/user-registration-using-contact-form-7-pro)</strong>
 
 = Getting Help With Wordpress =
 
@@ -102,6 +107,9 @@ That's it! Just configure your settings as you see fit, and you're on your way t
 No, you can use a Standard PayPal account.
 
 == Changelog ==
+
+= 4.0.2 =
+* Minor changes - Doc update
 
 = 4.0.1 =
 * Minor changes in workflow
