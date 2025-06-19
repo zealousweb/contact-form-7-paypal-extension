@@ -295,7 +295,8 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 			if ( !empty( $form_fields ) ) {
 				foreach ( $form_fields as $key ) {
-					$keyval = sanitize_text_field( $_REQUEST[ $key ] ); //phpcs:ignore
+					$keyval = isset( $_REQUEST[ $key ] ) ? sanitize_text_field( $_REQUEST[ $key ] ) : '';
+					//$keyval = sanitize_text_field( $_REQUEST[ $key ] ); //phpcs:ignore
 					update_post_meta( $post_id, $key, $keyval );
 				}
 			}

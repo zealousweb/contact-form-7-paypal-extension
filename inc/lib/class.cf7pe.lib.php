@@ -674,7 +674,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 						'log.LogEnabled' => true,
 						'log.FileName'   => CF7PE_DIR . '/inc/lib/log/paypal.log',
 						'log.LogLevel'   => 'DEBUG',
-						'mode'			 => $apimode
+						'mode'			 => $apimode,
+						'http.CURLOPT_SSL_VERIFYPEER' => false 
 					)
 				);
 
