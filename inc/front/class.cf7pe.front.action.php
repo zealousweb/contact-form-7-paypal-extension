@@ -36,7 +36,8 @@ if ( !class_exists( 'CF7PE_Front_Action' ) ){
 		*/
 
 		function action__wp_enqueue_scripts() {
-			wp_enqueue_script( CF7PE_PREFIX . '_front_js', CF7PE_URL . 'assets/js/front.min.js', array( 'jquery-core' ), CF7PE_VERSION );
+			//wp_enqueue_script( CF7PE_PREFIX . '_front_js', CF7PE_URL . 'assets/js/front.min.js', array( 'jquery-core' ), CF7PE_VERSION );
+			wp_enqueue_script( CF7PE_PREFIX . '_front_js', CF7PE_URL . 'assets/js/front.js', array( 'jquery-core' ), CF7PE_VERSION );
 		}
 
 

@@ -46,7 +46,202 @@ if ( !class_exists( 'CF7PE' ) ) {
 
 			// Action to display notice
 			add_action( 'admin_notices', array( $this, 'action__admin_notices' ) );
+
+			add_action( 'wpcf7_admin_init', array( $this, 'action__wpcf7_admin_init_paypal_tags' ), 15, 0 );
+
+			add_action( 'wpcf7_init', array( $this, 'action__wpcf7_fronted_tag_generate' ), 10, 0 );
 		}
+
+		
+		/**
+		 * action__wpcf7_admin_init_paypal_tags	 
+		*/
+
+		function action__wpcf7_admin_init_paypal_tags() {
+
+			$tag_generator = WPCF7_TagGenerator::get_instance();
+			$tag_generator->add(
+				'onsitepayment',
+				__( 'On Site Payment', 'accept-paypal-payments-using-contact-form-7' ),
+				array( $this, 'wpcf7_tag_generator_paypal_onsitepayment' ));
+		}
+
+		/**
+		 * wpcf7_tag_generator_stripe_net_paypal_onsitepayment 
+		 * Paypal Method Popup tag
+		 */
+		function wpcf7_tag_generator_paypal_onsitepayment( $contact_form, $args = '',$tag='') {
+		
+		$args = wp_parse_args( $args, array() );
+		$type = $args['id'];
+		$description = __( "Generate a form-tag for to display On-Site payment", 'accept-paypal-payments-using-contact-form-7' );
+		?>
+			<div class="control-box">
+				<fieldset>
+					<legend><?php echo esc_html( $description ); ?></legend>
+
+					<table class="form-table">
+						<tbody>
+							<tr>
+							<th scope="row"><label for="<?php echo esc_attr( $args['content'] . '-name' ); ?>"><?php echo esc_html( __( 'Name', 'contact-form-7' ) ); ?></label></th>
+							<td>
+								<legend class="screen-reader-text"><input type="checkbox" name="required" value="on" checked="checked" /></legend>
+								<input type="text" name="name" class="tg-name oneline" id="<?php echo esc_attr( $args['content'] . '-name' ); ?>" /></td>
+							</tr>
+							
+							<tr>
+								<th scope="row"><label for="<?php echo esc_attr($args['content'] . '-class'); ?>"><?php echo esc_html(__('Class attribute', 'contact-form-7')); ?></label></th>
+								<td><input type="text" name="class" class="classvalue oneline option" id="<?php echo esc_attr($args['content'] . '-class'); ?>" /></td>
+							</tr>
+
+						</tbody>
+					</table>
+				</fieldset>
+			</div>
+
+			<div class="insert-box">
+				<input type="text" name="<?php echo esc_attr($type); ?>" class="tag code" readonly="readonly" onfocus="this.select()"/>
+
+				<div class="submitbox">
+					<input type="button" class="button button-primary insert-tag" value="<?php echo esc_attr( __( 'Insert Tag', 'contact-form-7' ) ); ?>" />
+				</div>
+
+				<br class="clear" />
+
+				<p class="description mail-tag">
+					<label for="<?php echo esc_attr( $args['content'] . '-mailtag' ); ?>">
+						<?php echo sprintf( esc_html( __( "To use the value input through this field in a mail field, you need to insert the corresponding mail-tag (%s) into the field on the Mail tab.", 'contact-form-7' ) ), '<strong><span class="mail-tag"></span></strong>' ); ?>
+						<input type="text" class="mail-tag code hidden" readonly="readonly" id="<?php echo esc_attr( $args['content'] . '-mailtag' ); ?>" />
+					</label>
+				</p>
+			</div>
+		<?php
+		}
+
+		/**
+		 * action__wpcf7_fronted_tag_generate 
+		*/
+		function action__wpcf7_fronted_tag_generate(){
+			/* On sitepayment Mehtod Frontend tags */
+            wpcf7_add_form_tag( array( 'onsitepayment', 'onsitepayment*' ), array( $this, 'wpcf7_add_form_tag_onsitepayment_method' ), array( 'name-attr' => true ) );
+
+		}
+
+		function wpcf7_add_form_tag_onsitepayment_method( $tag ) {
+			
+			if ( empty( $tag->name ) ) {
+				return '';
+			}
+
+			$validation_error = wpcf7_get_validation_error( $tag->name );
+			$class = wpcf7_form_controls_class( $tag->type, 'wpcf7-text' );
+			
+			if (
+				in_array(
+					$tag->basetype,
+					array(
+						'email',
+						'url',
+						'tel'
+					)
+				)
+			) {
+				$class .= ' wpcf7-validates-as-' . $tag->basetype;
+			}
+
+			if ( $validation_error ) {
+				$class .= ' wpcf7-not-valid';
+			}
+
+			$atts = array();
+
+			if ( $tag->is_required() ) {
+				$atts['aria-required'] = 'true';
+			}
+
+			$atts['aria-invalid'] = $validation_error ? 'true' : 'false';
+
+			$atts['value'] = 1;
+
+			$atts['type'] = 'hidden';
+			$atts['name'] = $tag->name;
+			$atts         = wpcf7_format_atts($atts);
+
+			$form_instance = WPCF7_ContactForm::get_current();
+			$form_id       = $form_instance->id();
+			$use_paypal           = trim(get_post_meta( $form_id, CF7PE_META_PREFIX . 'use_paypal', true ));
+            $mode_sandbox           = trim(get_post_meta( $form_id, CF7PE_META_PREFIX . 'mode_sandbox', true ));
+            $sandbox_client_id      = get_post_meta( $form_id, CF7PE_META_PREFIX . 'sandbox_client_id', true );
+            $live_client_id         = get_post_meta( $form_id, CF7PE_META_PREFIX . 'live_client_id', true );
+            $currency               = get_post_meta( $form_id, CF7PE_META_PREFIX . 'currency', true );
+			$enable_on_site_payment = get_post_meta( $form_id, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
+
+            if(!empty($mode_sandbox)) {
+                $client_id = $sandbox_client_id;
+            }else{
+                $client_id = $live_client_id;
+            }
+			
+			$value = ( string ) reset( $tag->values );
+			$found = 0;
+			$html  = '';
+
+			ob_start();
+
+			if ( $contact_form = wpcf7_get_current_contact_form() ) {
+				$form_tags = $contact_form->scan_form_tags();
+				
+				foreach ( $form_tags as $k => $v ) {
+				
+					if ( $v['type'] == $tag->type ) {
+						$found++;
+					}
+
+					if ( $v['name'] == $tag->name ) {
+						
+							$attributes = $tag->options;
+							$class = '';
+							$id = '';
+							foreach ($attributes as $attribute) {
+								$parts = explode(':', $attribute);
+								$attribute_name = $parts[0];
+								$attribute_value = $parts[1];
+
+								if ($attribute_name === 'class') {
+									$class = $attribute_value;
+								} elseif ($attribute_name === 'id') {
+									$id = $attribute_value;
+								}
+							}
+							$id = (!empty($id)) ? 'id="' . $id . '"' : '';
+							$class = (!empty($class)) ? 'class="' . $class . '"' : '';
+
+							if ( $found <= 1 ) { 
+								if(!empty($enable_on_site_payment) && !empty($use_paypal)) { 
+									?>
+									<script src="https://www.paypal.com/sdk/js?client-id=<?php echo $client_id; ?>&components=card-fields&currency=<?php echo $currency; ?>"></script>
+									<div class="panel">
+										<div class="panel-body">
+											<div id="paymentResponse" class="hidden"></div>
+											<div id="checkout-form">
+												<div id="card-name-field-container"></div>
+												<div id="card-number-field-container"></div>
+												<div id="card-expiry-field-container"></div>
+												<div id="card-cvv-field-container"></div>
+											</div>
+										</div>
+									</div>
+								<?php } else{
+									echo '['.$tag->type. ' ' .$tag->name. ' '  .$class. ']';
+								}
+							}
+						break;
+					}
+				}
+			}
+			return ob_get_clean();
+		}
+
 
 		function action__init() {
 

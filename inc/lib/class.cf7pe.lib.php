@@ -427,6 +427,16 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				];
 
 				$apiContext = $this->getApiContext( $paypalConfig['client_id'], $paypalConfig['client_secret'], $mode_sandbox );
+				
+				$apimode = ( $mode_sandbox ) ? 'sandbox' : 'live';
+				
+				$apiContext->setConfig(
+					array(
+						'mode'			 => $apimode,
+						'http.CURLOPT_SSL_VERIFYPEER' => false,
+					)
+				);
+
 				$payment = Payment::get($paymentId, $apiContext);
 				/**
 				 * Add transctions to Paypal Account
@@ -675,7 +685,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 						'log.FileName'   => CF7PE_DIR . '/inc/lib/log/paypal.log',
 						'log.LogLevel'   => 'DEBUG',
 						'mode'			 => $apimode,
-						'http.CURLOPT_SSL_VERIFYPEER' => false 
+						'http.CURLOPT_SSL_VERIFYPEER' => false,
 					)
 				);
 

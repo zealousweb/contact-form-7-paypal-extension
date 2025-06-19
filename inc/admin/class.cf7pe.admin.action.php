@@ -287,6 +287,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				CF7PE_META_PREFIX . 'currency',
 				CF7PE_META_PREFIX . 'success_returnurl',
 				CF7PE_META_PREFIX . 'cancel_returnurl',
+				CF7PE_META_PREFIX . 'enable_on_site_payment',
 			);
 
 			if(!get_option('_exceed_cfpezw_l')){
