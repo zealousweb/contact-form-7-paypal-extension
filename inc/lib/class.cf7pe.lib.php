@@ -612,162 +612,191 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				if ( empty( $use_paypal ) )
 					return;
 
-				$mode_sandbox           = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'mode_sandbox', true );
-				$sandbox_client_id      = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'sandbox_client_id', true );
-				$sandbox_client_secret  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'sandbox_client_secret', true );
-				$live_client_id         = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'live_client_id', true );
-				$live_client_secret     = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'live_client_secret', true );
-				$amount                 = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'amount', true );
-				$quantity               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'quantity', true );
-				$description            = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'description', true );
-				$success_returnURL      = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'success_returnurl', true );
-				$cancle_returnURL       = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'cancel_returnurl', true );
-				$mail                   = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
-				// Set some example data for the payment.
-				$currency               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
+				// Check if on-site payments are enabled to determine the flow.
+				$enable_on_site_payment = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
 				
-
-				$mail       = ( ( !empty( $mail ) && array_key_exists( $mail, $posted_data ) ) ? $posted_data[$mail] : '' );
-				$description = ( ( !empty( $description ) && array_key_exists( $description, $posted_data ) ) ? $posted_data[$description] : get_bloginfo( 'name' ) );
-				add_filter( 'wpcf7_skip_mail', array( $this, 'filter__wpcf7_skip_mail' ), 20 );
-
-				$amount_val  = ( ( !empty( $amount ) && array_key_exists( $amount, $posted_data ) ) ? floatval( $posted_data[$amount] ) : '0' );
-				$quanity_val = ( ( !empty( $quantity ) && array_key_exists( $quantity, $posted_data ) ) ? floatval( $posted_data[$quantity] ) : '' );
-
-				$description_val = ( ( !empty( $description ) && array_key_exists( $description, $posted_data ) ) ? $posted_data[$description] : get_bloginfo( 'name' ) );
-
-                if (
-					!empty( $amount )
-					&& array_key_exists( $amount, $posted_data )
-					&& is_array( $posted_data[$amount] )
-					&& !empty( $posted_data[$amount] )
-				) {
-					$val = 0;
-					foreach ( $posted_data[$amount] as $k => $value ) {
-						$val = $val + floatval($value);
+				if ( $enable_on_site_payment ) {
+					// --- ON-SITE PAYMENT FLOW ---
+					$posted_data = $submission->get_posted_data();
+					$payment_reference = isset( $posted_data['payment_reference'] ) ? sanitize_text_field( $posted_data['payment_reference'] ) : '';
+					
+					if ( empty( $payment_reference ) ) {
+						$abort = true;
+						$submission->set_response( __( 'Payment is required to submit this form.', 'accept-paypal-payments-using-contact-form-7' ) );
+						return;
 					}
-					$amount_val = $val;
-				}
 
-				if (
-					!empty( $quantity )
-					&& array_key_exists( $quantity, $posted_data )
-					&& is_array( $posted_data[$quantity] )
-					&& !empty( $posted_data[$quantity] )
-				) {
-					$qty_val = 0;
-					foreach ( $posted_data[$quantity] as $k => $qty ) {
-						$qty_val = $qty_val + floatval($qty);
+					// Process the payment using PayPal API directly
+					$payment_result = $this->process_onsite_payment($form_ID, $payment_reference, $posted_data);
+					
+					if (!$payment_result['success']) {
+						$submission->set_response( $payment_result['message'] );
+						return;
 					}
-					$quanity_val = $qty_val;
-				}
 
-				if ( empty( $amount_val ) ) {
-					$_SESSION[ CF7PE_META_PREFIX . 'amount_error' . $form_ID ] = __( 'Empty Amount field or Invalid configuration.', CF7PE_PREFIX );
+					// Store payment reference
+					update_post_meta( $form_ID, '_last_payment_reference', $payment_reference );
+					
+					// For on-site payments, we don't need to redirect, just continue with form submission
 					return;
-				}
+				} else {
+					// --- REDIRECT PAYMENT FLOW ---
+					$mode_sandbox           = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'mode_sandbox', true );
+					$sandbox_client_id      = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'sandbox_client_id', true );
+					$sandbox_client_secret  = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'sandbox_client_secret', true );
+					$live_client_id         = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'live_client_id', true );
+					$live_client_secret     = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'live_client_secret', true );
+					$amount                 = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'amount', true );
+					$quantity               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'quantity', true );
+					$description            = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'description', true );
+					$success_returnURL      = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'success_returnurl', true );
+					$cancle_returnURL       = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'cancel_returnurl', true );
+					$mail                   = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'email', true );
+					// Set some example data for the payment.
+					$currency               = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'currency', true );
+					
 
-				// PayPal settings. Change these to your account details and the relevant URLs
-				// for your site.
-				$paypalConfig = [
-					'client_id'     => ( !empty( $mode_sandbox ) ? $sandbox_client_id : $live_client_id ),
-					'client_secret' => ( !empty( $mode_sandbox ) ? $sandbox_client_secret : $live_client_secret ),
-					'return_url'    => ( !empty( $success_returnURL ) ? esc_url( $success_returnURL ) : site_url() ),
-					'cancel_url'    => ( !empty( $cancle_returnURL ) ? esc_url( $cancle_returnURL ) : site_url() ),
-				];
+					$mail       = ( ( !empty( $mail ) && array_key_exists( $mail, $posted_data ) ) ? $posted_data[$mail] : '' );
+					$description = ( ( !empty( $description ) && array_key_exists( $description, $posted_data ) ) ? $posted_data[$description] : get_bloginfo( 'name' ) );
+					add_filter( 'wpcf7_skip_mail', array( $this, 'filter__wpcf7_skip_mail' ), 20 );
 
-				$apimode = ( $mode_sandbox ) ? 'sandbox' : 'live';
-				$apiContext = $this->getApiContext( $paypalConfig['client_id'], $paypalConfig['client_secret'], $apimode );
+					$amount_val  = ( ( !empty( $amount ) && array_key_exists( $amount, $posted_data ) ) ? floatval( $posted_data[$amount] ) : '0' );
+					$quanity_val = ( ( !empty( $quantity ) && array_key_exists( $quantity, $posted_data ) ) ? floatval( $posted_data[$quantity] ) : '' );
 
-				$apiContext->setConfig(
-					array(
-						'log.LogEnabled' => true,
-						'log.FileName'   => CF7PE_DIR . '/inc/lib/log/paypal.log',
-						'log.LogLevel'   => 'DEBUG',
-						'mode'			 => $apimode,
-						'http.CURLOPT_SSL_VERIFYPEER' => false,
-					)
-				);
+					$description_val = ( ( !empty( $description ) && array_key_exists( $description, $posted_data ) ) ? $posted_data[$description] : get_bloginfo( 'name' ) );
 
-				$_SESSION[ CF7PE_META_PREFIX . 'context_' . $form_ID ] = $apiContext;
-
-				$payer = new Payer();
-				$payer->setPaymentMethod( 'paypal' );
-
-				// Set some example data for the payment.
-				$amountPayable = (float) ( empty( $quanity_val ) ? $amount_val : ( $quanity_val * $amount_val ) );
-				$invoiceNumber = uniqid();
-
-				$item = new Item();
-				$item->setName( $description_val )
-					->setCurrency( $currency )
-					->setQuantity( ( empty( $quanity_val ) ? 1 : $quanity_val ) )
-					->setPrice( $amount_val );
-
-				$itemList = new ItemList();
-				$itemList->setItems( array( $item ) );
-
-				$details = new Details();
-				$details->setSubtotal( $amountPayable );
-
-				$amount = new Amount();
-				$amount->setCurrency( $currency )
-					->setTotal( $amountPayable )
-					->setDetails($details);
-
-				$transaction = new Transaction();
-				$transaction->setAmount( $amount )
-					->setItemList( $itemList )
-					->setDescription( $description_val )
-					->setInvoiceNumber( $invoiceNumber );
-
-				$redirectUrls = new RedirectUrls();
-				$redirectUrls->setReturnUrl( $paypalConfig[ 'return_url' ] )
-					->setCancelUrl( $paypalConfig[ 'cancel_url' ] );
-
-				$payment = new Payment();
-				$payment->setIntent( 'sale' )
-					->setPayer( $payer )
-					->setId( $invoiceNumber )
-					->setTransactions( array( $transaction ) )
-					->setRedirectUrls( $redirectUrls );
-
-				$request = clone $payment;
-
-				try {
-					$payment->create( $apiContext );
-				} catch ( Exception $e ) {
-					$_SESSION[ CF7PE_META_PREFIX . 'exception_' . $form_ID ] = $e->getData();
-					remove_filter( 'wpcf7_skip_mail', array( $this, 'filter__wpcf7_skip_mail' ), 20 );
-					return;
-				}
-
-				if( !empty( $submission->uploaded_files() ) ) {
-
-					$cf7_verify = $this->wpcf7_version();
-
-					if ( version_compare( $cf7_verify, '5.4' ) >= 0 ) {
-						$uploaded_files = $this->zw_cf7_upload_files( $submission->uploaded_files(), 'new' );
-					}else{
-						$uploaded_files = $this->zw_cf7_upload_files( array( $submission->uploaded_files() ), 'old' );
+					if (
+						!empty( $amount )
+						&& array_key_exists( $amount, $posted_data )
+						&& is_array( $posted_data[$amount] )
+						&& !empty( $posted_data[$amount] )
+					) {
+						$val = 0;
+						foreach ( $posted_data[$amount] as $k => $value ) {
+							$val = $val + floatval($value);
+						}
+						$amount_val = $val;
 					}
 
-					if ( !empty( $uploaded_files ) ) {
-						$_SESSION[ CF7PE_META_PREFIX . 'form_attachment_' . $form_ID ] = serialize( $uploaded_files );
+					if (
+						!empty( $quantity )
+						&& array_key_exists( $quantity, $posted_data )
+						&& is_array( $posted_data[$quantity] )
+						&& !empty( $posted_data[$quantity] )
+					) {
+						$qty_val = 0;
+						foreach ( $posted_data[$quantity] as $k => $qty ) {
+							$qty_val = $qty_val + floatval($qty);
+						}
+						$quanity_val = $qty_val;
+					}
+
+					if ( empty( $amount_val ) ) {
+						$_SESSION[ CF7PE_META_PREFIX . 'amount_error' . $form_ID ] = __( 'Empty Amount field or Invalid configuration.', CF7PE_PREFIX );
+						return;
+					}
+
+					// PayPal settings. Change these to your account details and the relevant URLs
+					// for your site.
+					$paypalConfig = [
+						'client_id'     => ( !empty( $mode_sandbox ) ? $sandbox_client_id : $live_client_id ),
+						'client_secret' => ( !empty( $mode_sandbox ) ? $sandbox_client_secret : $live_client_secret ),
+						'return_url'    => ( !empty( $success_returnURL ) ? esc_url( $success_returnURL ) : site_url() ),
+						'cancel_url'    => ( !empty( $cancle_returnURL ) ? esc_url( $cancle_returnURL ) : site_url() ),
+					];
+
+					$apimode = ( $mode_sandbox ) ? 'sandbox' : 'live';
+					$apiContext = $this->getApiContext( $paypalConfig['client_id'], $paypalConfig['client_secret'], $apimode );
+
+					$apiContext->setConfig(
+						array(
+							'log.LogEnabled' => true,
+							'log.FileName'   => CF7PE_DIR . '/inc/lib/log/paypal.log',
+							'log.LogLevel'   => 'DEBUG',
+							'mode'			 => $apimode,
+							'http.CURLOPT_SSL_VERIFYPEER' => false,
+						)
+					);
+
+					$_SESSION[ CF7PE_META_PREFIX . 'context_' . $form_ID ] = $apiContext;
+
+					$payer = new Payer();
+					$payer->setPaymentMethod( 'paypal' );
+
+					// Set some example data for the payment.
+					$amountPayable = (float) ( empty( $quanity_val ) ? $amount_val : ( $quanity_val * $amount_val ) );
+					$invoiceNumber = uniqid();
+
+					$item = new Item();
+					$item->setName( $description_val )
+						->setCurrency( $currency )
+						->setQuantity( ( empty( $quanity_val ) ? 1 : $quanity_val ) )
+						->setPrice( $amount_val );
+
+					$itemList = new ItemList();
+					$itemList->setItems( array( $item ) );
+
+					$details = new Details();
+					$details->setSubtotal( $amountPayable );
+
+					$amount = new Amount();
+					$amount->setCurrency( $currency )
+						->setTotal( $amountPayable )
+						->setDetails($details);
+
+					$transaction = new Transaction();
+					$transaction->setAmount( $amount )
+						->setItemList( $itemList )
+						->setDescription( $description_val )
+						->setInvoiceNumber( $invoiceNumber );
+
+					$redirectUrls = new RedirectUrls();
+					$redirectUrls->setReturnUrl( $paypalConfig[ 'return_url' ] )
+						->setCancelUrl( $paypalConfig[ 'cancel_url' ] );
+
+					$payment = new Payment();
+					$payment->setIntent( 'sale' )
+						->setPayer( $payer )
+						->setId( $invoiceNumber )
+						->setTransactions( array( $transaction ) )
+						->setRedirectUrls( $redirectUrls );
+
+					$request = clone $payment;
+
+					try {
+						$payment->create( $apiContext );
+					} catch ( Exception $e ) {
+						$_SESSION[ CF7PE_META_PREFIX . 'exception_' . $form_ID ] = $e->getData();
+						remove_filter( 'wpcf7_skip_mail', array( $this, 'filter__wpcf7_skip_mail' ), 20 );
+						return;
+					}
+
+					if( !empty( $submission->uploaded_files() ) ) {
+
+						$cf7_verify = $this->wpcf7_version();
+
+						if ( version_compare( $cf7_verify, '5.4' ) >= 0 ) {
+							$uploaded_files = $this->zw_cf7_upload_files( $submission->uploaded_files(), 'new' );
+						}else{
+							$uploaded_files = $this->zw_cf7_upload_files( array( $submission->uploaded_files() ), 'old' );
+						}
+
+						if ( !empty( $uploaded_files ) ) {
+							$_SESSION[ CF7PE_META_PREFIX . 'form_attachment_' . $form_ID ] = serialize( $uploaded_files );
+						}
+					}
+
+					// if ( $payment->getApprovalLink() ) {
+					// 	$_SESSION[ CF7PE_META_PREFIX . 'paypal_url' . $form_ID ] = $payment->getApprovalLink();
+					// }
+
+					$_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] = serialize( $submission );
+
+					if ( !$submission->is_restful() ) {
+						wp_redirect( $payment->getApprovalLink() );
+						exit;
 					}
 				}
-
-				if ( $payment->getApprovalLink() ) {
-					$_SESSION[ CF7PE_META_PREFIX . 'paypal_url' . $form_ID ] = $payment->getApprovalLink();
-				}
-
-				$_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] = serialize( $submission );
-
-				if ( !$submission->is_restful() ) {
-					wp_redirect( $payment->getApprovalLink() );
-					exit;
-				}
-
 			}
 
 		}
@@ -1067,17 +1096,140 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		 * @return string
 		 */
 		function getUserIpAddr() {
-			$ip = '';
 			if ( !empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
 				//ip from share internet
 				$ip = $_SERVER['HTTP_CLIENT_IP'];
-			} else if ( !empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			} elseif ( !empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
 				//ip pass from proxy
 				$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
 			} else {
 				$ip = $_SERVER['REMOTE_ADDR'];
 			}
 			return $ip;
+		}
+
+		/**
+		 * Process on-site payment directly without AJAX
+		 */
+		function process_onsite_payment($form_id, $order_id, $posted_data) {
+			$result = array('success' => false, 'message' => 'Payment processing failed');
+
+			// Get PayPal configuration from form settings
+			$mode_sandbox = trim(get_post_meta($form_id, CF7PE_META_PREFIX . 'mode_sandbox', true));
+			$sandbox_client_id = get_post_meta($form_id, CF7PE_META_PREFIX . 'sandbox_client_id', true);
+			$sandbox_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'sandbox_client_secret', true);
+			$live_client_id = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_id', true);
+			$live_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_secret', true);
+
+			// Set PayPal API endpoints based on mode
+			$paypalAuthAPI = !empty($mode_sandbox) ? 
+				'https://api-m.sandbox.paypal.com/v1/oauth2/token' : 
+				'https://api-m.paypal.com/v1/oauth2/token';
+			
+			$paypalAPI = !empty($mode_sandbox) ? 
+				'https://api-m.sandbox.paypal.com/v2/checkout' : 
+				'https://api-m.paypal.com/v2/checkout';
+
+			$paypalClientID = !empty($mode_sandbox) ? $sandbox_client_id : $live_client_id;
+			$paypalSecret = !empty($mode_sandbox) ? $sandbox_client_secret : $live_client_secret;
+
+			// Generate access token
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $paypalAuthAPI);
+			curl_setopt($ch, CURLOPT_HEADER, false);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_USERPWD, $paypalClientID.":".$paypalSecret);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=client_credentials");
+			$auth_response = json_decode(curl_exec($ch));
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			if ($http_code != 200 || empty($auth_response->access_token)) {
+				$result['message'] = 'Failed to generate Access Token';
+				return $result;
+			}
+
+			$accessToken = $auth_response->access_token;
+
+			// Capture order
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $paypalAPI.'/orders/'.$order_id.'/capture');
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '. $accessToken,
+				'Prefer: return=representation'
+			));
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, '{}'); // Empty JSON object for capture
+			
+			$api_resp = curl_exec($ch);
+			$api_data = json_decode($api_resp, true);
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			if ($http_code != 200 && $http_code != 201) {
+				$result['message'] = 'Failed to capture Order: ' . $api_resp;
+				return $result;
+			}
+
+			if (!empty($api_data)) {
+				// Extract payment details
+				$transaction_id = '';
+				$payment_status = '';
+				$amount_value = '';
+				$currency_code = '';
+				$payer_email = '';
+
+				if (!empty($api_data['purchase_units'][0]['payments']['captures'][0])) {
+					$capture = $api_data['purchase_units'][0]['payments']['captures'][0];
+					$transaction_id = $capture['id'];
+					$payment_status = $capture['status'];
+					$amount_value = $capture['amount']['value'];
+					$currency_code = $capture['amount']['currency_code'];
+				}
+
+				if (!empty($api_data['payer']['email_address'])) {
+					$payer_email = $api_data['payer']['email_address'];
+				}
+
+				// Store transaction in WordPress if payment is completed or approved
+				if (!empty($transaction_id) && ($payment_status === 'COMPLETED' || $payment_status === 'APPROVED')) {
+					$cf7pap_post_id = wp_insert_post(array(
+						'post_type' => 'cf7pe_data',
+						'post_title' => $transaction_id,
+						'post_status' => 'publish',
+						'comment_status' => 'closed',
+						'ping_status' => 'closed',
+					));
+
+					if (!empty($cf7pap_post_id)) {
+						// Store all meta fields
+						add_post_meta($cf7pap_post_id, '_form_id', $form_id);
+						add_post_meta($cf7pap_post_id, '_payer_email', $payer_email);
+						add_post_meta($cf7pap_post_id, '_transaction_id', $transaction_id);
+						add_post_meta($cf7pap_post_id, '_amount', $amount_value);
+						add_post_meta($cf7pap_post_id, '_currency', $currency_code);
+						add_post_meta($cf7pap_post_id, '_form_data', serialize($posted_data));
+						add_post_meta($cf7pap_post_id, '_transaction_response', $api_resp);
+						add_post_meta($cf7pap_post_id, '_transaction_status', $payment_status);
+						
+						$result = array(
+							'success' => true,
+							'message' => 'Payment processed successfully!',
+							'transaction_id' => $transaction_id,
+							'status' => $payment_status
+						);
+					}
+				} else {
+					$result['message'] = 'Payment not completed. Status: ' . $payment_status;
+				}
+			}
+
+			return $result;
 		}
 
 	}

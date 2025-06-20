@@ -50,9 +50,29 @@ if ( !class_exists( 'CF7PE' ) ) {
 			add_action( 'wpcf7_admin_init', array( $this, 'action__wpcf7_admin_init_paypal_tags' ), 15, 0 );
 
 			add_action( 'wpcf7_init', array( $this, 'action__wpcf7_fronted_tag_generate' ), 10, 0 );
+
+			// AJAX handler for creating orders
+			add_action( 'wp_ajax_cf7pap_create_order', array( $this, 'cf7pap_create_order' ));
+			add_action( 'wp_ajax_nopriv_cf7pap_create_order', array( $this, 'cf7pap_create_order' ));
+
+			// Add nonce verification for security
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_payment_scripts' ) );
 		}
 
-		
+		/**
+		 * Enqueue payment scripts and localize data
+		 */
+		function enqueue_payment_scripts() {
+			if (!is_admin()) {
+				wp_enqueue_script('cf7pap-front', CF7PE_URL . 'assets/js/front.js', array('jquery'), CF7PE_VERSION, true);
+				
+				wp_localize_script('cf7pap-front', 'CF7PAP_ajax_object', array(
+					'ajax_url' => admin_url('admin-ajax.php'),
+					'nonce' => wp_create_nonce('cf7pap_ajax_nonce')
+				));
+			}
+		}
+
 		/**
 		 * action__wpcf7_admin_init_paypal_tags	 
 		*/
@@ -389,15 +409,131 @@ if ( !class_exists( 'CF7PE' ) ) {
 		}
 
 		function action__admin_notices_deactive() {
-			echo '<div class="error">' .
-				'<p>' .
-					sprintf(
-						/* translators: Accept PayPal Payments using Contact Form 7 */
-						wp_kses( '<p><strong><a href="https://wordpress.org/plugins/contact-form-7/" target="_blank">Contact Form 7</a></strong> is required to use <strong>%s</strong>.</p>', 'accept-paypal-payments-using-contact-form-7' ),
-						'Accept PayPal Payments using Contact Form 7 - Paypal Add-on'
-					) .
-				'</p>' .
-			'</div>';
+			$screen = get_current_screen();
+			$allowed_screen = array( 'plugins' );
+			if ( !in_array( $screen->id, $allowed_screen ) ) {
+				return;
+			}
+			$plugin = plugin_basename( __FILE__ );
+			if ( is_plugin_active( $plugin ) ) {
+				deactivate_plugins( $plugin );
+			}
+		}
+
+		/**
+		 * AJAX handler for creating PayPal orders
+		 */
+		function cf7pap_create_order() {
+			$response = array('status' => 0, 'msg' => 'Request Failed!');
+
+			// Get and validate form ID
+			$form_id = isset($_POST['form_id']) ? intval($_POST['form_id']) : 0;
+			if (!$form_id) {
+				$response['msg'] = 'Invalid form ID';
+				wp_send_json($response);
+				return;
+			}
+
+			// Get amount
+			$amount = isset($_POST['amount']) ? floatval($_POST['amount']) : 10;
+			if ($amount <= 0) {
+				$response['msg'] = 'Invalid amount';
+				wp_send_json($response);
+				return;
+			}
+
+			// Get PayPal settings
+			$mode_sandbox = trim(get_post_meta($form_id, CF7PE_META_PREFIX . 'mode_sandbox', true));
+			$sandbox_client_id = get_post_meta($form_id, CF7PE_META_PREFIX . 'sandbox_client_id', true);
+			$sandbox_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'sandbox_client_secret', true);
+			$live_client_id = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_id', true);
+			$live_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_secret', true);
+			$currency = get_post_meta($form_id, CF7PE_META_PREFIX . 'currency', true);
+
+			// Set up PayPal API endpoints
+			$paypalAuthAPI = !empty($mode_sandbox) ? 
+				'https://api-m.sandbox.paypal.com/v1/oauth2/token' : 
+				'https://api-m.paypal.com/v1/oauth2/token';
+			
+			$paypalAPI = !empty($mode_sandbox) ? 
+				'https://api-m.sandbox.paypal.com/v2/checkout' : 
+				'https://api-m.paypal.com/v2/checkout';
+
+			$paypalClientID = !empty($mode_sandbox) ? $sandbox_client_id : $live_client_id;
+			$paypalSecret = !empty($mode_sandbox) ? $sandbox_client_secret : $live_client_secret;
+
+			if (empty($paypalClientID) || empty($paypalSecret)) {
+				$response['msg'] = 'PayPal credentials not configured';
+				wp_send_json($response);
+				return;
+			}
+
+			// Generate access token
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $paypalAuthAPI);
+			curl_setopt($ch, CURLOPT_HEADER, false);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_USERPWD, $paypalClientID.":".$paypalSecret);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=client_credentials");
+			$auth_response = json_decode(curl_exec($ch));
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			if ($http_code != 200 || empty($auth_response->access_token)) {
+				$response['msg'] = 'Failed to authenticate with PayPal';
+				wp_send_json($response);
+				return;
+			}
+
+			$accessToken = $auth_response->access_token;
+
+			// Create order
+			$rand_reference_id = uniqid('CF7PAP_');
+			$postParams = array(
+				"intent" => "CAPTURE",
+				"purchase_units" => array(
+					array(
+						"reference_id" => $rand_reference_id,
+						"description" => "Payment for Form #" . $form_id,
+						"amount" => array(
+							"currency_code" => $currency,
+							"value" => number_format($amount, 2, '.', '')
+						)
+					)
+				)
+			);
+
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $paypalAPI.'/orders/');
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '. $accessToken
+			));
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postParams));
+			$api_resp = curl_exec($ch);
+			$api_data = json_decode($api_resp, true);
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			if ($http_code != 200 && $http_code != 201) {
+				$response['msg'] = 'Failed to create order: ' . $api_resp;
+				wp_send_json($response);
+				return;
+			}
+
+			if (!empty($api_data)) {
+				$response = array(
+					'status' => 1,
+					'data' => $api_data
+				);
+			}
+
+			wp_send_json($response);
 		}
 
 	}
