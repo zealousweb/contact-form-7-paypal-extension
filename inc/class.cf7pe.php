@@ -52,8 +52,8 @@ if ( !class_exists( 'CF7PE' ) ) {
 			add_action( 'wpcf7_init', array( $this, 'action__wpcf7_fronted_tag_generate' ), 10, 0 );
 
 			// AJAX handler for creating orders
-			add_action( 'wp_ajax_cf7pap_create_order', array( $this, 'cf7pap_create_order' ));
-			add_action( 'wp_ajax_nopriv_cf7pap_create_order', array( $this, 'cf7pap_create_order' ));
+			add_action( 'wp_ajax_cf7pe_create_order', array( $this, 'cf7pe_create_order' ));
+			add_action( 'wp_ajax_nopriv_cf7pe_create_order', array( $this, 'cf7pe_create_order' ));
 
 			// Add nonce verification for security
 			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_payment_scripts' ) );
@@ -423,7 +423,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 		/**
 		 * AJAX handler for creating PayPal orders
 		 */
-		function cf7pap_create_order() {
+		function cf7pe_create_order() {
 			$response = array('status' => 0, 'msg' => 'Request Failed!');
 
 			// Get and validate form ID

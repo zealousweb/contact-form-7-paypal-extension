@@ -31,7 +31,7 @@ jQuery(document).ready(function($) {
                         setProcessing(true, formId);
                         
                         // Get form data to calculate amount
-                        let amount = 10; // Default amount
+                        let amount = 11; // Default amount
                         const amountField = $form.find('input[name="amount"], input[name="price"], input[name="total"]').first();
                         if (amountField.length) {
                             const amountValue = parseFloat(amountField.val());
@@ -42,7 +42,7 @@ jQuery(document).ready(function($) {
 
                         // Create order using AJAX
                         var postData = {
-                            action: 'cf7pap_create_order',
+                            action: 'cf7pe_create_order',
                             form_id: formId,
                             amount: amount,
                             payment_source: data.paymentSource
@@ -88,13 +88,6 @@ jQuery(document).ready(function($) {
                         
                         setProcessing(false, formId);
                         
-                        // Submit form using CF7's API
-                        if (typeof window.wpcf7 !== 'undefined' && typeof window.wpcf7.submit === 'function') {
-                            window.wpcf7.submit($form[0]);
-                        } else {
-                            $form.find('input[type="submit"]').prop('disabled', false);
-                            $form.submit();
-                        }
                         resolve();
                     });
                 },
@@ -139,13 +132,13 @@ jQuery(document).ready(function($) {
                     e.stopPropagation();
                     
                     var $submitButton = $(this).find('input[type="submit"]');
-                    $submitButton.prop('disabled', true);
+                    //$submitButton.prop('disabled', true);
                     setProcessing(true, formId);
                     
                     cardField.submit()
                         .catch((error) => {
                             setProcessing(false, formId);
-                            $submitButton.prop('disabled', false);
+                            //$submitButton.prop('disabled', false);
                             resultMessage(`Payment error: ${error.message}`, formId);
                         });
                     
@@ -189,20 +182,16 @@ jQuery(document).ready(function($) {
     // Initialize forms on page load
     initializeForms();
 
-    // Handle CF7 form initialization
-    $(document).on('wpcf7:init', function() {
-        initializeForms();
-    });
-
-    // Handle CF7 form reset
-    $(document).on('wpcf7:reset', function(e) {
-        const $form = $(e.target);
-        const formId = $form.find('input[name="_wpcf7"]').val();
-        if (formId && window.CF7PayPal[formId]) {
-            delete window.CF7PayPal[formId];
-            initializePayPalForm($form);
-        }
-    });
+   
+    // // Handle CF7 form reset
+    // $(document).on('wpcf7:reset', function(e) {
+    //     const $form = $(e.target);
+    //     const formId = $form.find('input[name="_wpcf7"]').val();
+    //     if (formId && window.CF7PayPal[formId]) {
+    //         delete window.CF7PayPal[formId];
+    //         initializePayPalForm($form);
+    //     }
+    // });
     
     // Show a loader on payment form processing
     const setProcessing = (isProcessing, formId) => {
@@ -221,7 +210,7 @@ jQuery(document).ready(function($) {
         const $form = $('form.wpcf7-form').filter(function() {
             return $(this).find('input[name="_wpcf7"]').val() === formId;
         });
-        const $messageContainer = $form.find("#paymentResponse");
+        //const $messageContainer = $form.find("#paymentResponse");
         if ($messageContainer.length) {
             $messageContainer.removeClass('hidden')
                            .text(msg_txt);

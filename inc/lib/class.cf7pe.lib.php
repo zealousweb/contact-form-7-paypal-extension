@@ -596,6 +596,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		function action__wpcf7_before_send_mail( $contact_form ) {
 
 			$submission    = WPCF7_Submission::get_instance(); // CF7 Submission Instance
+			
 			$form_ID       = $contact_form->id();
 		
 			$form_instance = WPCF7_ContactForm::get_instance($form_ID); // CF7 From Instance
@@ -616,8 +617,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$enable_on_site_payment = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
 				
 				if ( $enable_on_site_payment ) {
-					// --- ON-SITE PAYMENT FLOW ---
-					$posted_data = $submission->get_posted_data();
+					
 					$payment_reference = isset( $posted_data['payment_reference'] ) ? sanitize_text_field( $posted_data['payment_reference'] ) : '';
 					
 					if ( empty( $payment_reference ) ) {
@@ -625,7 +625,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 						$submission->set_response( __( 'Payment is required to submit this form.', 'accept-paypal-payments-using-contact-form-7' ) );
 						return;
 					}
-
 					// Process the payment using PayPal API directly
 					$payment_result = $this->process_onsite_payment($form_ID, $payment_reference, $posted_data);
 					
@@ -639,7 +638,9 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					
 					// For on-site payments, we don't need to redirect, just continue with form submission
 					return;
+				
 				} else {
+
 					// --- REDIRECT PAYMENT FLOW ---
 					$mode_sandbox           = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'mode_sandbox', true );
 					$sandbox_client_id      = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'sandbox_client_id', true );
@@ -786,9 +787,9 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 						}
 					}
 
-					// if ( $payment->getApprovalLink() ) {
-					// 	$_SESSION[ CF7PE_META_PREFIX . 'paypal_url' . $form_ID ] = $payment->getApprovalLink();
-					// }
+					if ( $payment->getApprovalLink() ) {
+						$_SESSION[ CF7PE_META_PREFIX . 'paypal_url' . $form_ID ] = $payment->getApprovalLink();
+					}
 
 					$_SESSION[ CF7PE_META_PREFIX . 'form_instance' ] = serialize( $submission );
 
@@ -1112,6 +1113,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		 * Process on-site payment directly without AJAX
 		 */
 		function process_onsite_payment($form_id, $order_id, $posted_data) {
+
 			$result = array('success' => false, 'message' => 'Payment processing failed');
 
 			// Get PayPal configuration from form settings
@@ -1215,7 +1217,10 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 						add_post_meta($cf7pap_post_id, '_currency', $currency_code);
 						add_post_meta($cf7pap_post_id, '_form_data', serialize($posted_data));
 						add_post_meta($cf7pap_post_id, '_transaction_response', $api_resp);
-						add_post_meta($cf7pap_post_id, '_transaction_status', $payment_status);
+						add_post_meta($cf7pap_post_id, '_transaction_status_on_site', $payment_status);
+						add_post_meta($cf7pap_post_id, '_transaction_status', 'Succeeded');
+						add_post_meta($cf7pap_post_id, '_total', $amount_value);
+						add_post_meta($cf7pap_post_id, '_request_Ip', $this->getUserIpAddr() );
 						
 						$result = array(
 							'success' => true,
