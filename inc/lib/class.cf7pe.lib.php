@@ -614,29 +614,38 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					return;
 
 				// Check if on-site payments are enabled to determine the flow.
+				// Check if on-site payment is enabled for this form
 				$enable_on_site_payment = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
-				
+
 				if ( $enable_on_site_payment ) {
-					
+					// Get and validate payment reference
 					$payment_reference = isset( $posted_data['payment_reference'] ) ? sanitize_text_field( $posted_data['payment_reference'] ) : '';
 					
+					// Validate payment reference exists
 					if ( empty( $payment_reference ) ) {
 						$abort = true;
 						$submission->set_response( __( 'Payment is required to submit this form.', 'accept-paypal-payments-using-contact-form-7' ) );
 						return;
 					}
-					// Process the payment using PayPal API directly
+
+					// Process payment through PayPal API
 					$payment_result = $this->process_onsite_payment($form_ID, $payment_reference, $posted_data);
 					
+					// Handle payment processing result
 					if (!$payment_result['success']) {
+						$abort = true;
 						$submission->set_response( $payment_result['message'] );
 						return;
 					}
 
-					// Store payment reference
+					// Store successful payment reference
 					update_post_meta( $form_ID, '_last_payment_reference', $payment_reference );
 					
-					// For on-site payments, we don't need to redirect, just continue with form submission
+					// Add payment information to form data
+					$posted_data['payment_status'] = $payment_result['status'];
+					$posted_data['transaction_id'] = $payment_result['transaction_id'];
+					
+					// Allow form submission to continue
 					return;
 				
 				} else {
