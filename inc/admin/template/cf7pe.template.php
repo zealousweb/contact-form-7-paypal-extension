@@ -429,6 +429,15 @@ add_action('admin_print_footer_scripts', function() {
 			        position: 'left center',
 			    }).pointer('open');
 			});
+			jQuery('#cf7pe-on-site-payment').on('mouseenter click', function() {
+			    jQuery('body .wp-pointer-buttons .close').trigger('click');
+			    jQuery('#cf7pe-on-site-payment').pointer({
+			        pointerClass: 'wp-pointer cf7adn-pointer',
+			        content: '<?php echo '<h3>' . esc_html__('On Site Payment', 'accept-paypal-payments-using-contact-form-7') . '</h3>' .
+			            '<p>' .	 esc_html__('Accept PayPal payments directly on your website without redirecting customers', 'accept-paypal-payments-using-contact-form-7') . '</p>'; ?>',
+			        position: 'left center',
+			    }).pointer('open');
+			});
 
 		} );
 		//]]>
