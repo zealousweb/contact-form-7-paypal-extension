@@ -29,14 +29,49 @@ jQuery(document).ready(function($) {
                 createOrder: function(data) {
                     return new Promise((resolve, reject) => {
                         setProcessing(true, formId);
+                        var $wpcf7_form = $('form.wpcf7-form');
+                        let isValid = true;
                         
-                        // Get form data to calculate amount
-                        let amount = 10; // Default amount
-                        const amountField = $form.find('input[name="amount"], input[name="price"], input[name="total"]').first();
-                        if (amountField.length) {
-                            const amountValue = parseFloat(amountField.val());
-                            if (!isNaN(amountValue) && amountValue > 0) {
-                                amount = amountValue;
+                        // Validate required form fields
+                        $wpcf7_form.find('input').each(function () {
+                            if ($(this).hasClass('wpcf7-validates-as-required') && $(this).val() === '') {
+                                isValid = false;
+                            }
+                        });
+                        
+                        // Validate PayPal card fields
+                        const cardNumberField = $wpcf7_form.find('#card-number-field-container');
+                        const cardNameField = $wpcf7_form.find('#card-name-field-container');
+                        const cardExpiryField = $wpcf7_form.find('#card-expiry-field-container');
+                        const cardCvvField = $wpcf7_form.find('#card-cvv-field-container');
+                        
+                        if (!cardNumberField.children().length || !cardNameField.children().length || 
+                            !cardExpiryField.children().length || !cardCvvField.children().length) {
+                            isValid = false;
+                            $wpcf7_form.find('.wpcf7-response-output').text('Please fill in all card details.');
+                        }
+                        
+                        if (!isValid) {
+                            setProcessing(false, formId);
+                            //$wpcf7_form.find('.wpcf7-spinner').css('display', 'none');
+                            //$wpcf7_form.find('.wpcf7-response-output').show();
+                            reject(new Error('One or more fields have an error.'));
+                            return;
+                        } else {
+                            console.log('createOrder process starting...');
+                            // Force spinner to display and hide response output
+                            $wpcf7_form.find('.wpcf7-spinner').css({'display': 'inline-flex', 'visibility': 'visible', 'opacity': '1'});
+                            $wpcf7_form.find('.wpcf7-response-output').hide();
+                        }
+
+                        const amount_attr = $("input[name='cf7pe_amount']").attr("att-cf7pe-name");
+                        if (amount_attr) {
+                            const $amountField = $("input[name='" + amount_attr + "']"); // jQuery object
+                            if ($amountField.length) {
+                                const amountValue = parseFloat($amountField.val());
+                                if (!isNaN(amountValue)) {
+                                    amount = amountValue;
+                                }
                             }
                         }
 
@@ -49,15 +84,16 @@ jQuery(document).ready(function($) {
                         };
                 
                         $.ajax({
-                            url: CF7PAP_ajax_object.ajax_url,
+                            url: CF7PE_ajax_object.ajax_url,
                             type: 'POST',
                             data: postData,
                             dataType: 'json'
                         })
                         .then(function(result) {
-                            setProcessing(false, formId);
                             if(result.status == 1 && result.data && result.data.id){
                                 resolve(result.data.id);
+                                // Keep spinner visible until payment completes
+                                $wpcf7_form.find('.wpcf7-spinner').css({'display': 'inline-flex', 'visibility': 'visible', 'opacity': '1'});
                             } else {
                                 const error = result.msg || 'Failed to create order';
                                 resultMessage(error, formId);
@@ -74,9 +110,13 @@ jQuery(document).ready(function($) {
                 },
                 onApprove: function(data) {
                     return new Promise((resolve, reject) => {
-                        setProcessing(true, formId);
-                
                         const { orderID } = data;
+                        const $form = $('form.wpcf7-form').filter(function() {
+                            return $(this).find('input[name="_wpcf7"]').val() === formId;
+                        });
+                        
+                        // Keep spinner visible during processing
+                        $form.find('.wpcf7-spinner').css({'display': 'inline-flex', 'visibility': 'visible', 'opacity': '1'});
                         
                         // Add payment reference to form for processing in wpcf7_before_send_mail
                         $form.find('input[name="payment_reference"]').remove();
@@ -88,28 +128,82 @@ jQuery(document).ready(function($) {
                         
                         setProcessing(false, formId);
                         
-                        // Submit form using CF7's API
                         if (typeof window.wpcf7 !== 'undefined' && typeof window.wpcf7.submit === 'function') {
                             window.wpcf7.submit($form[0]);
-                        } 
-                        resolve();
+                            
+                            // Hide spinner and show response output after a delay
+                            setTimeout(() => {
+                                setProcessing(false, formId);
+                                $form.find('.wpcf7-spinner').css('display', 'none');
+                                $form.find('.wpcf7-response-output')
+                                    .removeClass('wpcf7-validation-errors')
+                                    .addClass('wpcf7-mail-sent-ok')
+                                    .show();
+                                
+                                // Check if dynamic success return URL is available
+                                if (CF7PE_ajax_object.dynamic_success_return_url) {
+                                    // Use dynamic success return URL if available and not empty
+                                    const successUrl = CF7PE_ajax_object.dynamic_success_return_url && CF7PE_ajax_object.dynamic_success_return_url.trim() !== '' 
+                                        ? CF7PE_ajax_object.dynamic_success_return_url 
+                                        : null; // Don't redirect if no URL set
+                                    
+                                    if (successUrl && successUrl.trim() !== '') {
+                                        window.location.href = successUrl;
+                                    }
+                                } else {
+                                    // Use dynamic success return URL if available and not empty
+                                    const successUrl = CF7PE_ajax_object.success_return_url && CF7PE_ajax_object.success_return_url.trim() !== '' 
+                                        ? CF7PE_ajax_object.success_return_url 
+                                        : null; // Don't redirect if no URL set
+                                    
+                                    if (successUrl && successUrl.trim() !== '') {
+                                        window.location.href = successUrl;
+                                    }
+                                }
+                                resolve();
+                            }, 1000);
+                        }
                     });
                 },
                 onError: function(error) {
                     setProcessing(false, formId);
                     resultMessage('Payment error: ' + error.message, formId);
+                    $form.find('.wpcf7-spinner').css('display', 'none');
                 },
             });
 
             // Only proceed if Card Fields are eligible
             if (cardField.isEligible()) {
-                // Remove any existing card fields first
-                $form.find('#card-name-field-container, #card-number-field-container, #card-cvv-field-container, #card-expiry-field-container').empty();
+                try {
                 // Render card fields
-                const nameField = cardField.NameField();
-                const numberField = cardField.NumberField();
-                const cvvField = cardField.CVVField();
-                const expiryField = cardField.ExpiryField();
+                const nameField = cardField.NameField({
+                    onValidate: function(event) {
+                        if (event.isEmpty) {
+                            $form.find('.wpcf7-response-output').text('Please enter card holder name').show();
+                        }
+                    }
+                });
+                const numberField = cardField.NumberField({
+                    onValidate: function(event) {
+                        if (event.isEmpty) {
+                            $form.find('.wpcf7-response-output').text('Please enter card number').show();
+                        }
+                    }
+                });
+                const cvvField = cardField.CVVField({
+                    onValidate: function(event) {
+                        if (event.isEmpty) {
+                            $form.find('.wpcf7-response-output').text('Please enter CVV').show();
+                        }
+                    }
+                });
+                const expiryField = cardField.ExpiryField({
+                    onValidate: function(event) {
+                        if (event.isEmpty) {
+                            $form.find('.wpcf7-response-output').text('Please enter expiry date').show();
+                        }
+                    }
+                });
 
                 // Check if containers exist before rendering
                 const containers = {
@@ -119,10 +213,14 @@ jQuery(document).ready(function($) {
                     expiry: $form.find("#card-expiry-field-container")[0]
                 };
 
-                if (containers.name) nameField.render("#" + containers.name.id);
-                if (containers.number) numberField.render("#" + containers.number.id);
-                if (containers.cvv) cvvField.render("#" + containers.cvv.id);
-                if (containers.expiry) expiryField.render("#" + containers.expiry.id);
+                    if (containers.name) nameField.render("#" + containers.name.id);
+                    if (containers.number) numberField.render("#" + containers.number.id);
+                    if (containers.cvv) cvvField.render("#" + containers.cvv.id);
+                    if (containers.expiry) expiryField.render("#" + containers.expiry.id);
+                } catch (error) {
+                    console.error('Error rendering PayPal card fields:', error);
+                    return;
+                }
 
                 // Remove any existing submit handlers
                 $form.off('submit.cf7paypal wpcf7submit.cf7paypal');
@@ -141,7 +239,7 @@ jQuery(document).ready(function($) {
                     cardField.submit()
                         .catch((error) => {
                             setProcessing(false, formId);
-                            resultMessage(`Payment error: ${error.message}`, formId);
+                            resultMessage(`Payment error : ${error.message}`, formId);
                         });
                     
                     return false;

@@ -79,6 +79,51 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			// Refund payment functionality
 			add_action('wp_ajax_action__refund_payment_free' ,array( $this, 'action__refund_payment_free'));
 			add_action('wp_ajax_nopriv_action__refund_payment_free', array( $this,'action__refund_payment_free')) ;
+
+			add_filter( 'wpcf7_validate_onsitepayment',  array( $this, 'wpcf7_onsitepayment_validation_filter' ), 10, 2 );
+			add_filter( 'wpcf7_validate_onsitepayment*', array( $this, 'wpcf7_onsitepayment_validation_filter' ), 10, 2 );
+		}
+
+		/*
+		   ###     ######  ######## ####  #######  ##    ##  ######
+		  ## ##   ##    ##    ##     ##  ##     ## ###   ## ##    ##
+		 ##   ##  ##          ##     ##  ##     ## ####  ## ##
+		##     ## ##          ##     ##  ##     ## ## ## ##  ######
+		######### ##          ##     ##  ##     ## ##  ####       ##
+		##     ## ##    ##    ##     ##  ##     ## ##   ### ##    ##
+		##     ##  ######     ##    ####  #######  ##    ##  ######
+		*/
+		/**
+		 * Action: init
+		 *
+		 * - Fire the email when return back from the paypal.
+		 *
+		 * @method action__cf7pe_paypal_save_data
+		 *
+		 */
+		function wpcf7_onsitepayment_validation_filter( $result, $tag ) {
+
+			$payment_reference = isset( $_POST['payment_reference'] ) ? sanitize_text_field( $_POST['payment_reference'] ) : '';
+			$id = isset( $_POST['_wpcf7'] ) ? (int) $_POST['_wpcf7'] : 0;
+
+			if ( !empty( $id ) ) {
+				$id = ( int ) $_POST[ '_wpcf7' ]; 
+			} else {
+				return $result;
+			}
+
+			$use_paypal = get_post_meta( $id, CF7PE_META_PREFIX . 'use_paypal', true );
+
+			if ( empty( $use_paypal ) ) {
+				return $result;
+			}
+
+			// Validate the payment_reference field only
+			if ( empty( $payment_reference ) ) {
+				$result->invalidate( $tag, 'Payment reference is missing.' );
+			}
+
+			return $result;
 		}
 
 		/*
@@ -594,7 +639,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		 *
 		 */
 		function action__wpcf7_before_send_mail( $contact_form ) {
-
+			
 			$submission    = WPCF7_Submission::get_instance(); // CF7 Submission Instance
 			
 			$form_ID       = $contact_form->id();
@@ -883,6 +928,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$response[ 'status' ] = 'mail_failed';
 				unset( $_SESSION[ CF7PE_META_PREFIX . 'amount_error' . $result[ 'contact_form_id' ] ] );
 			}
+
+			
 
 			return $response;
 		}

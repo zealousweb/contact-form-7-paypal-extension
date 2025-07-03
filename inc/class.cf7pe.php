@@ -66,9 +66,32 @@ if ( !class_exists( 'CF7PE' ) ) {
 			if (!is_admin()) {
 				wp_enqueue_script('cf7pap-front', CF7PE_URL . 'assets/js/front.js', array('jquery'), CF7PE_VERSION, true);
 				
-				wp_localize_script('cf7pap-front', 'CF7PAP_ajax_object', array(
+				// Get current form ID to pass return URLs
+				$form_id = 0;
+				if (function_exists('wpcf7_get_current_contact_form')) {
+					$contact_form = wpcf7_get_current_contact_form();
+					if ($contact_form) {
+						$form_id = $contact_form->id();
+					}
+				}
+				
+				// Get return URLs from post meta
+				$success_returnURL = '';
+				$cancel_returnURL = '';
+				if ($form_id) {
+					$success_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'success_returnurl', true);
+					$cancel_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'cancel_returnurl', true);
+				}
+				
+				// Keep URLs empty if not set - let frontend handle fallbacks
+				// This allows users to choose whether to redirect or stay on page
+				
+				wp_localize_script('cf7pap-front', 'CF7PE_ajax_object', array(
 					'ajax_url' => admin_url('admin-ajax.php'),
-					'nonce' => wp_create_nonce('cf7pap_ajax_nonce')
+					'nonce' => wp_create_nonce('cf7pap_ajax_nonce'),
+					'success_return_url' => $success_returnURL,
+					'cancel_return_url' => $cancel_returnURL,
+					'form_id' => $form_id
 				));
 			}
 		}
@@ -189,12 +212,13 @@ if ( !class_exists( 'CF7PE' ) ) {
 
 			$form_instance = WPCF7_ContactForm::get_current();
 			$form_id       = $form_instance->id();
-			$use_paypal           = trim(get_post_meta( $form_id, CF7PE_META_PREFIX . 'use_paypal', true ));
+			$use_paypal             = trim(get_post_meta( $form_id, CF7PE_META_PREFIX . 'use_paypal', true ));
             $mode_sandbox           = trim(get_post_meta( $form_id, CF7PE_META_PREFIX . 'mode_sandbox', true ));
             $sandbox_client_id      = get_post_meta( $form_id, CF7PE_META_PREFIX . 'sandbox_client_id', true );
             $live_client_id         = get_post_meta( $form_id, CF7PE_META_PREFIX . 'live_client_id', true );
             $currency               = get_post_meta( $form_id, CF7PE_META_PREFIX . 'currency', true );
 			$enable_on_site_payment = get_post_meta( $form_id, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
+			$amount                 = get_post_meta( $form_id, CF7PE_META_PREFIX . 'amount', true );
 
             if(!empty($mode_sandbox)) {
                 $client_id = $sandbox_client_id;
@@ -242,15 +266,16 @@ if ( !class_exists( 'CF7PE' ) ) {
 									<script src="https://www.paypal.com/sdk/js?client-id=<?php echo $client_id; ?>&components=card-fields&currency=<?php echo $currency; ?>"></script>
 									<div class="panel">
 										<div class="panel-body">
-											<div id="paymentResponse" class="hidden"></div>
 											<div id="checkout-form">
 												<div id="card-name-field-container"></div>
 												<div id="card-number-field-container"></div>
 												<div id="card-expiry-field-container"></div>
 												<div id="card-cvv-field-container"></div>
 											</div>
+											<div id="paymentResponse" class="hidden" style="color: red;"></div>
 										</div>
 									</div>
+									<input type="hidden" name="cf7pe_amount" att-cf7pe-name="<?php echo $amount;?>">
 								<?php } else{
 									echo '['.$tag->type. ' ' .$tag->name. ' '  .$class. ']';
 								}
@@ -449,6 +474,23 @@ if ( !class_exists( 'CF7PE' ) ) {
 			$live_client_id = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_id', true);
 			$live_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_secret', true);
 			$currency = get_post_meta($form_id, CF7PE_META_PREFIX . 'currency', true);
+			
+			// Get dynamic return URLs from post meta
+			$success_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'success_returnurl', true);
+			$cancel_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'cancel_returnurl', true);
+			
+			// Use URLs passed from frontend if post meta is empty
+			if (empty($success_returnURL) && isset($_POST['success_return_url'])) {
+				$success_returnURL = sanitize_url($_POST['success_return_url']);
+			}
+			if (empty($cancel_returnURL) && isset($_POST['cancel_return_url'])) {
+				$cancel_returnURL = sanitize_url($_POST['cancel_return_url']);
+			}
+			
+			// Provide default fallback URLs for PayPal API (PayPal requires valid URLs)
+			// But keep original values for frontend use
+			$paypal_success_url = !empty($success_returnURL) ? $success_returnURL : home_url('/paypal-success/');
+			$paypal_cancel_url = !empty($cancel_returnURL) ? $cancel_returnURL : home_url('/paypal-cancel/');
 
 			// Set up PayPal API endpoints
 			$paypalAuthAPI = !empty($mode_sandbox) ? 
@@ -502,6 +544,10 @@ if ( !class_exists( 'CF7PE' ) ) {
 							"value" => number_format($amount, 2, '.', '')
 						)
 					)
+				),
+				"application_context" => array(
+					"return_url" => esc_url($paypal_success_url),
+					"cancel_url" => esc_url($paypal_cancel_url)
 				)
 			);
 
