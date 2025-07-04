@@ -240,6 +240,7 @@ echo '<div class="cf7pe-settings">' .
 							__( 'Enable On Site Payment', 'accept-paypal-payments-using-contact-form-7' ) .
 						'</label>' .
 						'<span class="cf7pe-tooltip hide-if-no-js" id="cf7pe-on-site-payment"></span>' .
+						__( '</br>Requires "On Site Payment" tag in CF7', 'accept-paypal-payments-using-contact-form-7' ) .
 					'</th>' .
 					'<td>' .
 						'<input id="' . CF7PE_META_PREFIX . 'enable_on_site_payment" name="' . CF7PE_META_PREFIX . 'enable_on_site_payment" type="checkbox" class="enable_required" value="1" ' . checked( $enable_on_site_payment, 1, false ) . '/>' .
@@ -433,8 +434,11 @@ add_action('admin_print_footer_scripts', function() {
 			    jQuery('body .wp-pointer-buttons .close').trigger('click');
 			    jQuery('#cf7pe-on-site-payment').pointer({
 			        pointerClass: 'wp-pointer cf7adn-pointer',
-			        content: '<?php echo '<h3>' . esc_html__('On Site Payment', 'accept-paypal-payments-using-contact-form-7') . '</h3>' .
-			            '<p>' .	 esc_html__('Accept PayPal payments directly on your website without redirecting customers', 'accept-paypal-payments-using-contact-form-7') . '</p>'; ?>',
+			         content: '<?php
+		                echo '<h3>' . esc_html__('On Site Payment', 'accept-paypal-payments-using-contact-form-7') . '</h3>' .
+		                     '<p><strong>' . esc_html__('Make the "On Site Payment" Tag Mandatory in Contact Form 7', 'accept-paypal-payments-using-contact-form-7') .'</strong>'.
+		                     ' ' . esc_html__('Accept PayPal payments directly on your website without redirecting customers.', 'accept-paypal-payments-using-contact-form-7') . '</p>';
+		            ?>',
 			        position: 'left center',
 			    }).pointer('open');
 			});

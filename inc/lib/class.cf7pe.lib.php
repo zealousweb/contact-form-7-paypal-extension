@@ -658,7 +658,6 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				if ( empty( $use_paypal ) )
 					return;
 
-				// Check if on-site payments are enabled to determine the flow.
 				// Check if on-site payment is enabled for this form
 				$enable_on_site_payment = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
 

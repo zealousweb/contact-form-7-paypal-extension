@@ -449,6 +449,14 @@ if ( !class_exists( 'CF7PE' ) ) {
 		 * AJAX handler for creating PayPal orders
 		 */
 		function cf7pe_create_order() {
+			if ( ! isset($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'cf7pap_ajax_nonce') ) {
+		        wp_send_json_error(array(
+		            'status' => 0,
+		            'msg' => 'Security check failed. Invalid nonce.'
+		        ));
+		        wp_die();
+		    }
+
 			$response = array('status' => 0, 'msg' => 'Request Failed!');
 
 			// Get and validate form ID

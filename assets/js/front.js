@@ -8,10 +8,6 @@ jQuery( document ).ready( function( $ ) {
 		}
 
 	} );
-} );
-
-// Create the Card Fields Component and define callbacks
-jQuery(document).ready(function($) {
     // Create a namespace for our payment handling
     window.CF7PayPal = window.CF7PayPal || {};
     // Only initialize once per form
@@ -80,7 +76,8 @@ jQuery(document).ready(function($) {
                             action: 'cf7pe_create_order',
                             form_id: formId,
                             amount: amount,
-                            payment_source: data.paymentSource
+                            payment_source: data.paymentSource,
+                            nonce: CF7PE_ajax_object.nonce  // ✅ Add nonce here
                         };
                 
                         $.ajax({
