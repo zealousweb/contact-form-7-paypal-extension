@@ -64,7 +64,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 		 */
 		function enqueue_payment_scripts() {
 			if (!is_admin()) {
-				wp_enqueue_script('cf7pap-front', CF7PE_URL . 'assets/js/front.js', array('jquery'), CF7PE_VERSION, true);
+				wp_enqueue_script('cf7pap-front', CF7PE_URL . 'assets/js/front.min.js', array('jquery'), CF7PE_VERSION, true);
 				
 				// Get current form ID to pass return URLs
 				$form_id = 0;

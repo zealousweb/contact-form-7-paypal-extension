@@ -596,7 +596,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 													echo '<td>Already Refunded</td>';
 												}else{
 													echo '<td>'.
-															'<button type="button" class="pap-refund-payment" id="pap-refund-payment">Refund Payment</button>'.
+															'<button type="button" class="pap-refund-payment button button-primary" id="pap-refund-payment">Refund Payment</button>'.
 															'<input type="hidden" id="entry_id" name="entry_id" value="'.esc_attr($post->ID).'">'.
 															'<input type="hidden" id="contact_form_id" name="contact_form_id" value="'.esc_attr($form_id).'">'.
 															'<input type="hidden" id="transaction_id" name="transaction_id" value="'.esc_attr($transaction_id).'">'.
