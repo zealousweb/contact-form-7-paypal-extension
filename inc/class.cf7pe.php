@@ -294,6 +294,9 @@ if ( !class_exists( 'CF7PE' ) ) {
 			if ( !is_plugin_active( 'contact-form-7/wp-contact-form-7.php' ) ) {
 				add_action( 'admin_notices', array( $this, 'action__admin_notices_deactive' ) );
 				deactivate_plugins( CF7PE_PLUGIN_BASENAME );
+				if (isset($_GET['activate'])) {
+				    unset($_GET['activate']);
+				}
 			}
             // Load Paypal SDK on int action
 			require __DIR__ . '/lib/sdk/autoload.php';
@@ -443,6 +446,15 @@ if ( !class_exists( 'CF7PE' ) ) {
 			if ( is_plugin_active( $plugin ) ) {
 				deactivate_plugins( $plugin );
 			}
+			echo '<div class="error">' .
+				'<p>' .
+					sprintf(
+						/* translators: Contact Form 7 - Paypal Add-on */
+						__( '<p><strong><a href="https://wordpress.org/plugins/contact-form-7/" target="_blank">Contact Form 7</a></strong> is required to use <strong>%s</strong>.</p>', 'accept-paypal-payments-using-contact-form-7' ),
+						'Contact Form 7 - Paypal Add-on'
+					) .
+				'</p>' .
+			'</div>';
 		}
 
 		/**
