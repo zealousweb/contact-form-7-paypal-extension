@@ -6,11 +6,11 @@ Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
 Tested up to: 6.8
 Requires PHP: 5.6
-Stable tag: 4.0.2
+Stable tag: 4.0.3
 License: GPLv3 or later License
 CF7 requires at least: 3.0
 CF7 tested up to: 5.8
-Version: 4.0.2
+Version: 4.0.3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Integrate PayPal Submit button in Contact Form 7 to Enjoy Quick Online Payments.
@@ -32,6 +32,8 @@ You can make the payment once and all as there is no recurring payment option.  
 * ‘Sandbox’ testing option available to ensure proper functioning.
 * ‘Return URL’ and ‘Cancel URL’ options for payment success and cancellation facility.
 * Compatibility of WordPress VIP.
+* On-Site Payment Option: Secure, seamless payment experience without redirecting users away from your site.
+* On-Site Payment (credit-card): Secure, seamless payments without redirecting users.
 
 <strong>[Demo for Accept PayPal Payments using Contact Form 7](https://demo.zealousweb.com/wordpress-plugins/accept-paypal-payments-using-contact-form-7/)</strong>
 
@@ -106,7 +108,14 @@ That's it! Just configure your settings as you see fit, and you're on your way t
 
 No, you can use a Standard PayPal account.
 
+= What is On-Site Payment? =
+
+On-Site Payment allows users to complete credit card transactions directly on your website without being redirected to an external payment gateway.
+
 == Changelog ==
+
+= 4.0.3 =
+* On-Site Payment Option: Secure, seamless payment experience without redirecting users away from your site.
 
 = 4.0.2 =
 * Minor changes - Doc update
