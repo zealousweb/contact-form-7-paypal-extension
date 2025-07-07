@@ -275,6 +275,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 											<div id="paymentResponse" class="hidden" style="color: red;"></div>
 										</div>
 									</div>
+									<input type="hidden" name="cf7pe_on_site_payment" value="cf7pe_on_site_payment">
 									<input type="hidden" name="cf7pe_amount" att-cf7pe-name="<?php echo $amount;?>">
 								<?php } else{
 									echo '['.$tag->type. ' ' .$tag->name. ' '  .$class. ']';

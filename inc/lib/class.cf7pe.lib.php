@@ -104,6 +104,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		function wpcf7_onsitepayment_validation_filter( $result, $tag ) {
 
 			$payment_reference = isset( $_POST['payment_reference'] ) ? sanitize_text_field( $_POST['payment_reference'] ) : '';
+			$cf7pe_on_site_payment = isset( $_POST['cf7pe_on_site_payment'] ) ? sanitize_text_field( $_POST['cf7pe_on_site_payment'] ) : '';
+			
 			$id = isset( $_POST['_wpcf7'] ) ? (int) $_POST['_wpcf7'] : 0;
 
 			if ( !empty( $id ) ) {
@@ -119,7 +121,7 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			}
 
 			// Validate the payment_reference field only
-			if ( empty( $payment_reference ) ) {
+			if ( empty( $payment_reference ) && $cf7pe_on_site_payment === 'cf7pe_on_site_payment') {
 				$result->invalidate( $tag, 'Payment reference is missing.' );
 			}
 
@@ -651,17 +653,19 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$posted_data = $submission->get_posted_data();
 			}
 
+			$use_paypal = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'use_paypal', true );
+
+			if ( empty( $use_paypal ) )
+				return;
+
 			if ( !empty( $form_ID ) ) {
-
-				$use_paypal = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'use_paypal', true );
-
-				if ( empty( $use_paypal ) )
-					return;
 
 				// Check if on-site payment is enabled for this form
 				$enable_on_site_payment = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
+				
+				$cf7pe_on_site_payment = isset( $posted_data['cf7pe_on_site_payment'] ) ? sanitize_text_field( $posted_data['cf7pe_on_site_payment'] ) : '';
 
-				if ( $enable_on_site_payment ) {
+				if ( $enable_on_site_payment && $cf7pe_on_site_payment === 'cf7pe_on_site_payment') {
 					// Get and validate payment reference
 					$payment_reference = isset( $posted_data['payment_reference'] ) ? sanitize_text_field( $posted_data['payment_reference'] ) : '';
 					
