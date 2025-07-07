@@ -77,7 +77,7 @@ jQuery( document ).ready( function( $ ) {
                             form_id: formId,
                             amount: amount,
                             payment_source: data.paymentSource,
-                            nonce: CF7PE_ajax_object.nonce  // ✅ Add nonce here
+                            nonce: CF7PE_ajax_object.nonce  
                         };
                 
                         $.ajax({
