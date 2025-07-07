@@ -287,6 +287,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				CF7PE_META_PREFIX . 'currency',
 				CF7PE_META_PREFIX . 'success_returnurl',
 				CF7PE_META_PREFIX . 'cancel_returnurl',
+				CF7PE_META_PREFIX . 'enable_on_site_payment',
 			);
 
 			if(!get_option('_exceed_cfpezw_l')){
@@ -295,7 +296,8 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 			if ( !empty( $form_fields ) ) {
 				foreach ( $form_fields as $key ) {
-					$keyval = sanitize_text_field( $_REQUEST[ $key ] ); //phpcs:ignore
+					$keyval = isset( $_REQUEST[ $key ] ) ? sanitize_text_field( $_REQUEST[ $key ] ) : '';
+					//$keyval = sanitize_text_field( $_REQUEST[ $key ] ); //phpcs:ignore
 					update_post_meta( $post_id, $key, $keyval );
 				}
 			}
@@ -594,7 +596,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 													echo '<td>Already Refunded</td>';
 												}else{
 													echo '<td>'.
-															'<button type="button" class="pap-refund-payment" id="pap-refund-payment">Refund Payment</button>'.
+															'<button type="button" class="pap-refund-payment button button-primary" id="pap-refund-payment">Refund Payment</button>'.
 															'<input type="hidden" id="entry_id" name="entry_id" value="'.esc_attr($post->ID).'">'.
 															'<input type="hidden" id="contact_form_id" name="contact_form_id" value="'.esc_attr($form_id).'">'.
 															'<input type="hidden" id="transaction_id" name="transaction_id" value="'.esc_attr($transaction_id).'">'.

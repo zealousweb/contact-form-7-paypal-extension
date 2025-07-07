@@ -46,7 +46,247 @@ if ( !class_exists( 'CF7PE' ) ) {
 
 			// Action to display notice
 			add_action( 'admin_notices', array( $this, 'action__admin_notices' ) );
+
+			add_action( 'wpcf7_admin_init', array( $this, 'action__wpcf7_admin_init_paypal_tags' ), 15, 0 );
+
+			add_action( 'wpcf7_init', array( $this, 'action__wpcf7_fronted_tag_generate' ), 10, 0 );
+
+			// AJAX handler for creating orders
+			add_action( 'wp_ajax_cf7pe_create_order', array( $this, 'cf7pe_create_order' ));
+			add_action( 'wp_ajax_nopriv_cf7pe_create_order', array( $this, 'cf7pe_create_order' ));
+
+			// Add nonce verification for security
+			add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_payment_scripts' ) );
 		}
+
+		/**
+		 * Enqueue payment scripts and localize data
+		 */
+		function enqueue_payment_scripts() {
+			if (!is_admin()) {
+				wp_enqueue_script('cf7pap-front', CF7PE_URL . 'assets/js/front.min.js', array('jquery'), CF7PE_VERSION, true);
+				
+				// Get current form ID to pass return URLs
+				$form_id = 0;
+				if (function_exists('wpcf7_get_current_contact_form')) {
+					$contact_form = wpcf7_get_current_contact_form();
+					if ($contact_form) {
+						$form_id = $contact_form->id();
+					}
+				}
+				
+				// Get return URLs from post meta
+				$success_returnURL = '';
+				$cancel_returnURL = '';
+				if ($form_id) {
+					$success_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'success_returnurl', true);
+					$cancel_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'cancel_returnurl', true);
+				}
+				
+				// Keep URLs empty if not set - let frontend handle fallbacks
+				// This allows users to choose whether to redirect or stay on page
+				
+				wp_localize_script('cf7pap-front', 'CF7PE_ajax_object', array(
+					'ajax_url' => admin_url('admin-ajax.php'),
+					'nonce' => wp_create_nonce('cf7pap_ajax_nonce'),
+					'success_return_url' => $success_returnURL,
+					'cancel_return_url' => $cancel_returnURL,
+					'form_id' => $form_id
+				));
+			}
+		}
+
+		/**
+		 * action__wpcf7_admin_init_paypal_tags	 
+		*/
+
+		function action__wpcf7_admin_init_paypal_tags() {
+
+			$tag_generator = WPCF7_TagGenerator::get_instance();
+			$tag_generator->add(
+				'onsitepayment',
+				__( 'On Site Payment', 'accept-paypal-payments-using-contact-form-7' ),
+				array( $this, 'wpcf7_tag_generator_paypal_onsitepayment' ));
+		}
+
+		/**
+		 * wpcf7_tag_generator_stripe_net_paypal_onsitepayment 
+		 * Paypal Method Popup tag
+		 */
+		function wpcf7_tag_generator_paypal_onsitepayment( $contact_form, $args = '',$tag='') {
+		
+		$args = wp_parse_args( $args, array() );
+		$type = $args['id'];
+		$description = __( "Generate a form-tag for to display On-Site payment", 'accept-paypal-payments-using-contact-form-7' );
+		?>
+			<div class="control-box">
+				<fieldset>
+					<legend><?php echo esc_html( $description ); ?></legend>
+
+					<table class="form-table">
+						<tbody>
+							<tr>
+							<th scope="row"><label for="<?php echo esc_attr( $args['content'] . '-name' ); ?>"><?php echo esc_html( __( 'Name', 'contact-form-7' ) ); ?></label></th>
+							<td>
+								<legend class="screen-reader-text"><input type="checkbox" name="required" value="on" checked="checked" /></legend>
+								<input type="text" name="name" class="tg-name oneline" id="<?php echo esc_attr( $args['content'] . '-name' ); ?>" /></td>
+							</tr>
+							
+							<tr>
+								<th scope="row"><label for="<?php echo esc_attr($args['content'] . '-class'); ?>"><?php echo esc_html(__('Class attribute', 'contact-form-7')); ?></label></th>
+								<td><input type="text" name="class" class="classvalue oneline option" id="<?php echo esc_attr($args['content'] . '-class'); ?>" /></td>
+							</tr>
+
+						</tbody>
+					</table>
+				</fieldset>
+			</div>
+
+			<div class="insert-box">
+				<input type="text" name="<?php echo esc_attr($type); ?>" class="tag code" readonly="readonly" onfocus="this.select()"/>
+
+				<div class="submitbox">
+					<input type="button" class="button button-primary insert-tag" value="<?php echo esc_attr( __( 'Insert Tag', 'contact-form-7' ) ); ?>" />
+				</div>
+
+				<br class="clear" />
+
+				<p class="description mail-tag">
+					<label for="<?php echo esc_attr( $args['content'] . '-mailtag' ); ?>">
+						<?php echo sprintf( esc_html( __( "To use the value input through this field in a mail field, you need to insert the corresponding mail-tag (%s) into the field on the Mail tab.", 'contact-form-7' ) ), '<strong><span class="mail-tag"></span></strong>' ); ?>
+						<input type="text" class="mail-tag code hidden" readonly="readonly" id="<?php echo esc_attr( $args['content'] . '-mailtag' ); ?>" />
+					</label>
+				</p>
+			</div>
+		<?php
+		}
+
+		/**
+		 * action__wpcf7_fronted_tag_generate 
+		*/
+		function action__wpcf7_fronted_tag_generate(){
+			/* On sitepayment Mehtod Frontend tags */
+            wpcf7_add_form_tag( array( 'onsitepayment', 'onsitepayment*' ), array( $this, 'wpcf7_add_form_tag_onsitepayment_method' ), array( 'name-attr' => true ) );
+
+		}
+
+		function wpcf7_add_form_tag_onsitepayment_method( $tag ) {
+			
+			if ( empty( $tag->name ) ) {
+				return '';
+			}
+
+			$validation_error = wpcf7_get_validation_error( $tag->name );
+			$class = wpcf7_form_controls_class( $tag->type, 'wpcf7-text' );
+			
+			if (
+				in_array(
+					$tag->basetype,
+					array(
+						'email',
+						'url',
+						'tel'
+					)
+				)
+			) {
+				$class .= ' wpcf7-validates-as-' . $tag->basetype;
+			}
+
+			if ( $validation_error ) {
+				$class .= ' wpcf7-not-valid';
+			}
+
+			$atts = array();
+
+			if ( $tag->is_required() ) {
+				$atts['aria-required'] = 'true';
+			}
+
+			$atts['aria-invalid'] = $validation_error ? 'true' : 'false';
+
+			$atts['value'] = 1;
+
+			$atts['type'] = 'hidden';
+			$atts['name'] = $tag->name;
+			$atts         = wpcf7_format_atts($atts);
+
+			$form_instance = WPCF7_ContactForm::get_current();
+			$form_id       = $form_instance->id();
+			$use_paypal             = trim(get_post_meta( $form_id, CF7PE_META_PREFIX . 'use_paypal', true ));
+            $mode_sandbox           = trim(get_post_meta( $form_id, CF7PE_META_PREFIX . 'mode_sandbox', true ));
+            $sandbox_client_id      = get_post_meta( $form_id, CF7PE_META_PREFIX . 'sandbox_client_id', true );
+            $live_client_id         = get_post_meta( $form_id, CF7PE_META_PREFIX . 'live_client_id', true );
+            $currency               = get_post_meta( $form_id, CF7PE_META_PREFIX . 'currency', true );
+			$enable_on_site_payment = get_post_meta( $form_id, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
+			$amount                 = get_post_meta( $form_id, CF7PE_META_PREFIX . 'amount', true );
+
+            if(!empty($mode_sandbox)) {
+                $client_id = $sandbox_client_id;
+            }else{
+                $client_id = $live_client_id;
+            }
+			
+			$value = ( string ) reset( $tag->values );
+			$found = 0;
+			$html  = '';
+
+			ob_start();
+
+			if ( $contact_form = wpcf7_get_current_contact_form() ) {
+				$form_tags = $contact_form->scan_form_tags();
+				
+				foreach ( $form_tags as $k => $v ) {
+				
+					if ( $v['type'] == $tag->type ) {
+						$found++;
+					}
+
+					if ( $v['name'] == $tag->name ) {
+						
+							$attributes = $tag->options;
+							$class = '';
+							$id = '';
+							foreach ($attributes as $attribute) {
+								$parts = explode(':', $attribute);
+								$attribute_name = $parts[0];
+								$attribute_value = $parts[1];
+
+								if ($attribute_name === 'class') {
+									$class = $attribute_value;
+								} elseif ($attribute_name === 'id') {
+									$id = $attribute_value;
+								}
+							}
+							$id = (!empty($id)) ? 'id="' . $id . '"' : '';
+							$class = (!empty($class)) ? 'class="' . $class . '"' : '';
+
+							if ( $found <= 1 ) { 
+								if(!empty($enable_on_site_payment) && !empty($use_paypal)) { 
+									?>
+									<script src="https://www.paypal.com/sdk/js?client-id=<?php echo $client_id; ?>&components=card-fields&currency=<?php echo $currency; ?>"></script>
+									<div class="panel">
+										<div class="panel-body">
+											<div id="checkout-form">
+												<div id="card-name-field-container"></div>
+												<div id="card-number-field-container"></div>
+												<div id="card-expiry-field-container"></div>
+												<div id="card-cvv-field-container"></div>
+											</div>
+											<div id="paymentResponse" class="hidden" style="color: red;"></div>
+										</div>
+									</div>
+									<input type="hidden" name="cf7pe_amount" att-cf7pe-name="<?php echo $amount;?>">
+								<?php } else{
+									echo '['.$tag->type. ' ' .$tag->name. ' '  .$class. ']';
+								}
+							}
+						break;
+					}
+				}
+			}
+			return ob_get_clean();
+		}
+
 
 		function action__init() {
 
@@ -54,6 +294,9 @@ if ( !class_exists( 'CF7PE' ) ) {
 			if ( !is_plugin_active( 'contact-form-7/wp-contact-form-7.php' ) ) {
 				add_action( 'admin_notices', array( $this, 'action__admin_notices_deactive' ) );
 				deactivate_plugins( CF7PE_PLUGIN_BASENAME );
+				if (isset($_GET['activate'])) {
+				    unset($_GET['activate']);
+				}
 			}
             // Load Paypal SDK on int action
 			require __DIR__ . '/lib/sdk/autoload.php';
@@ -194,15 +437,169 @@ if ( !class_exists( 'CF7PE' ) ) {
 		}
 
 		function action__admin_notices_deactive() {
+			$screen = get_current_screen();
+			$allowed_screen = array( 'plugins' );
+			if ( !in_array( $screen->id, $allowed_screen ) ) {
+				return;
+			}
+			$plugin = plugin_basename( __FILE__ );
+			if ( is_plugin_active( $plugin ) ) {
+				deactivate_plugins( $plugin );
+			}
 			echo '<div class="error">' .
 				'<p>' .
 					sprintf(
-						/* translators: Accept PayPal Payments using Contact Form 7 */
-						wp_kses( '<p><strong><a href="https://wordpress.org/plugins/contact-form-7/" target="_blank">Contact Form 7</a></strong> is required to use <strong>%s</strong>.</p>', 'accept-paypal-payments-using-contact-form-7' ),
-						'Accept PayPal Payments using Contact Form 7 - Paypal Add-on'
+						/* translators: Contact Form 7 - Paypal Add-on */
+						__( '<p><strong><a href="https://wordpress.org/plugins/contact-form-7/" target="_blank">Contact Form 7</a></strong> is required to use <strong>%s</strong>.</p>', 'accept-paypal-payments-using-contact-form-7' ),
+						'Contact Form 7 - Paypal Add-on'
 					) .
 				'</p>' .
 			'</div>';
+		}
+
+		/**
+		 * AJAX handler for creating PayPal orders
+		 */
+		function cf7pe_create_order() {
+			if ( ! isset($_POST['nonce']) || ! wp_verify_nonce($_POST['nonce'], 'cf7pap_ajax_nonce') ) {
+		        wp_send_json_error(array(
+		            'status' => 0,
+		            'msg' => 'Security check failed. Invalid nonce.'
+		        ));
+		        wp_die();
+		    }
+
+			$response = array('status' => 0, 'msg' => 'Request Failed!');
+
+			// Get and validate form ID
+			$form_id = isset($_POST['form_id']) ? intval($_POST['form_id']) : 0;
+			if (!$form_id) {
+				$response['msg'] = 'Invalid form ID';
+				wp_send_json($response);
+				return;
+			}
+
+			// Get amount
+			$amount = isset($_POST['amount']) ? floatval($_POST['amount']) : 10;
+			if ($amount <= 0) {
+				$response['msg'] = 'Invalid amount';
+				wp_send_json($response);
+				return;
+			}
+
+			// Get PayPal settings
+			$mode_sandbox = trim(get_post_meta($form_id, CF7PE_META_PREFIX . 'mode_sandbox', true));
+			$sandbox_client_id = get_post_meta($form_id, CF7PE_META_PREFIX . 'sandbox_client_id', true);
+			$sandbox_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'sandbox_client_secret', true);
+			$live_client_id = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_id', true);
+			$live_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_secret', true);
+			$currency = get_post_meta($form_id, CF7PE_META_PREFIX . 'currency', true);
+			
+			// Get dynamic return URLs from post meta
+			$success_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'success_returnurl', true);
+			$cancel_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'cancel_returnurl', true);
+			
+			// Use URLs passed from frontend if post meta is empty
+			if (empty($success_returnURL) && isset($_POST['success_return_url'])) {
+				$success_returnURL = sanitize_url($_POST['success_return_url']);
+			}
+			if (empty($cancel_returnURL) && isset($_POST['cancel_return_url'])) {
+				$cancel_returnURL = sanitize_url($_POST['cancel_return_url']);
+			}
+			
+			// Provide default fallback URLs for PayPal API (PayPal requires valid URLs)
+			// But keep original values for frontend use
+			$paypal_success_url = !empty($success_returnURL) ? $success_returnURL : home_url('/paypal-success/');
+			$paypal_cancel_url = !empty($cancel_returnURL) ? $cancel_returnURL : home_url('/paypal-cancel/');
+
+			// Set up PayPal API endpoints
+			$paypalAuthAPI = !empty($mode_sandbox) ? 
+				'https://api-m.sandbox.paypal.com/v1/oauth2/token' : 
+				'https://api-m.paypal.com/v1/oauth2/token';
+			
+			$paypalAPI = !empty($mode_sandbox) ? 
+				'https://api-m.sandbox.paypal.com/v2/checkout' : 
+				'https://api-m.paypal.com/v2/checkout';
+
+			$paypalClientID = !empty($mode_sandbox) ? $sandbox_client_id : $live_client_id;
+			$paypalSecret = !empty($mode_sandbox) ? $sandbox_client_secret : $live_client_secret;
+
+			if (empty($paypalClientID) || empty($paypalSecret)) {
+				$response['msg'] = 'PayPal credentials not configured';
+				wp_send_json($response);
+				return;
+			}
+
+			// Generate access token
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $paypalAuthAPI);
+			curl_setopt($ch, CURLOPT_HEADER, false);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_USERPWD, $paypalClientID.":".$paypalSecret);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, "grant_type=client_credentials");
+			$auth_response = json_decode(curl_exec($ch));
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			if ($http_code != 200 || empty($auth_response->access_token)) {
+				$response['msg'] = 'Failed to authenticate with PayPal';
+				wp_send_json($response);
+				return;
+			}
+
+			$accessToken = $auth_response->access_token;
+
+			// Create order
+			$rand_reference_id = uniqid('CF7PAP_');
+			$postParams = array(
+				"intent" => "CAPTURE",
+				"purchase_units" => array(
+					array(
+						"reference_id" => $rand_reference_id,
+						"description" => "Payment for Form #" . $form_id,
+						"amount" => array(
+							"currency_code" => $currency,
+							"value" => number_format($amount, 2, '.', '')
+						)
+					)
+				),
+				"application_context" => array(
+					"return_url" => esc_url($paypal_success_url),
+					"cancel_url" => esc_url($paypal_cancel_url)
+				)
+			);
+
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $paypalAPI.'/orders/');
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+				'Content-Type: application/json',
+				'Authorization: Bearer '. $accessToken
+			));
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($postParams));
+			$api_resp = curl_exec($ch);
+			$api_data = json_decode($api_resp, true);
+			$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			curl_close($ch);
+
+			if ($http_code != 200 && $http_code != 201) {
+				$response['msg'] = 'Failed to create order: ' . $api_resp;
+				wp_send_json($response);
+				return;
+			}
+
+			if (!empty($api_data)) {
+				$response = array(
+					'status' => 1,
+					'data' => $api_data
+				);
+			}
+
+			wp_send_json($response);
 		}
 
 	}

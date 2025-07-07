@@ -27,6 +27,7 @@ $success_returnURL      = get_post_meta( $post_id, CF7PE_META_PREFIX . 'success_
 $cancle_returnURL       = get_post_meta( $post_id, CF7PE_META_PREFIX . 'cancel_returnurl', true );
 $message                = get_post_meta( $post_id, CF7PE_META_PREFIX . 'message', true );
 $currency               = get_post_meta( $post_id, CF7PE_META_PREFIX . 'currency', true );
+$enable_on_site_payment = get_post_meta( $post_id, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
 
 $currency_code = array(
 	'AUD' => 'Australian Dollar',
@@ -217,8 +218,35 @@ echo '<div class="cf7pe-settings">' .
 					'<td>' .
 						'<input id="' . CF7PE_META_PREFIX . 'cancel_returnurl" name="' . CF7PE_META_PREFIX . 'cancel_returnurl" type="text" class="regular-text" value="' . esc_attr( $cancle_returnURL ) . '" />' .
 					'</td>' .
-				'</tr>' .
-				'<input type="hidden" name="post" value="' . esc_attr( $post_id ) . '">' .
+				'</tr>';
+				/**
+				 * - On-site Payment Methods
+				 *
+				 * @var int $post_id
+				 */
+				echo '<tr class="form-field">' .
+					 '<th colspan="2">' .
+						 '<label for="' . CF7PE_META_PREFIX . 'on-site-payment">' .
+							 '<h3 style="margin: 0;">' .
+								 __( 'On Site Payment', 'accept-paypal-payments-using-contact-form-7' ) .
+								 '<span class="arrow-switch"></span>' .
+							 '</h3>' .
+						 '</label>' .
+					 '</th>' .
+				'</tr>'.
+				'<tr class="form-field">' .
+					'<th scope="row">' .
+						'<label for="' . CF7PE_META_PREFIX . 'enable_on_site_payment">' .
+							__( 'Enable On Site Payment', 'accept-paypal-payments-using-contact-form-7' ) .
+						'</label>' .
+						'<span class="cf7pe-tooltip hide-if-no-js" id="cf7pe-on-site-payment"></span>' .
+						__( '</br>Requires "On Site Payment" tag in CF7', 'accept-paypal-payments-using-contact-form-7' ) .
+					'</th>' .
+					'<td>' .
+						'<input id="' . CF7PE_META_PREFIX . 'enable_on_site_payment" name="' . CF7PE_META_PREFIX . 'enable_on_site_payment" type="checkbox" class="enable_required" value="1" ' . checked( $enable_on_site_payment, 1, false ) . '/>' .
+					'</td>' .
+				'</tr>';
+				echo '<input type="hidden" name="post" value="' . esc_attr( $post_id ) . '">' .
 			'</tbody>' .
 		'</table>' .
 	'</div>' .
@@ -399,6 +427,18 @@ add_action('admin_print_footer_scripts', function() {
 			        pointerClass: 'wp-pointer cf7adn-pointer',
 			        content: '<?php echo '<h3>' . esc_html__('Cancel Page URL', 'accept-paypal-payments-using-contact-form-7') . '</h3>' .
 			            '<p>' .	 esc_html__('Here is the list of all pages. You need to create your Cancel Page and Add that page from this link, when any payment is canceled, it will redirect to this Cancel Page.', 'accept-paypal-payments-using-contact-form-7') . '</p>'; ?>',
+			        position: 'left center',
+			    }).pointer('open');
+			});
+			jQuery('#cf7pe-on-site-payment').on('mouseenter click', function() {
+			    jQuery('body .wp-pointer-buttons .close').trigger('click');
+			    jQuery('#cf7pe-on-site-payment').pointer({
+			        pointerClass: 'wp-pointer cf7adn-pointer',
+			         content: '<?php
+		                echo '<h3>' . esc_html__('On Site Payment', 'accept-paypal-payments-using-contact-form-7') . '</h3>' .
+		                     '<p><strong>' . esc_html__('Make the "On Site Payment" Tag Mandatory in Contact Form 7', 'accept-paypal-payments-using-contact-form-7') .'</strong>'.
+		                     ' ' . esc_html__('Accept PayPal payments directly on your website without redirecting customers.', 'accept-paypal-payments-using-contact-form-7') . '</p>';
+		            ?>',
 			        position: 'left center',
 			    }).pointer('open');
 			});
