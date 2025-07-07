@@ -6,11 +6,11 @@ Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
 Tested up to: 6.8
 Requires PHP: 5.6
-Stable tag: 4.0.3
+Stable tag: 4.0.4
 License: GPLv3 or later License
 CF7 requires at least: 3.0
 CF7 tested up to: 5.8
-Version: 4.0.3
+Version: 4.0.4
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Integrate PayPal Submit button in Contact Form 7 to Enjoy Quick Online Payments.
@@ -106,7 +106,6 @@ That's it! Just configure your settings as you see fit, and you're on your way t
 9. Limited Payment Response Details: Admin side store up to 10 recent PayPal payment response details for review.
 
 
-
 == Frequently Asked Questions ==
 
 = Do I need a Business PayPal Account? =
@@ -118,6 +117,9 @@ No, you can use a Standard PayPal account.
 On-Site Payment allows users to complete credit card transactions directly on your website without being redirected to an external payment gateway.
 
 == Changelog ==
+
+= 4.0.4 =
+* Enhanced On-Site Payment Option : Improved code for a more secure and seamless payment experience—users can now complete transactions without being redirected off-site.
 
 = 4.0.3 =
 * On-Site Payment Option: Secure, seamless payment experience without redirecting users away from your site.
