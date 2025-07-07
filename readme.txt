@@ -98,9 +98,14 @@ That's it! Just configure your settings as you see fit, and you're on your way t
 1. PayPal Settings and Configuration
 2. PayPal Demo Form
 3. PayPal Amount field configuration
-4. PayPal Refund functionality
-5. Limited Payment Response Details: Admin side store up to 10 recent PayPal payment response details for review.
-6. Export Contact Form 7 payment data to CSV.
+4. Enable On-Site Payment requires the 'On Site Payment' tag to be added in your Contact Form 7 form.
+5. Add the 'On Site Payment' tag to your Contact Form 7 form to enable On-Site Payment.
+6. Users can see the On-Site Payment option on the frontend.
+7. PayPal Refund functionality
+8. Export Contact Form 7 payment data to CSV.
+9. Limited Payment Response Details: Admin side store up to 10 recent PayPal payment response details for review.
+
+
 
 == Frequently Asked Questions ==
 
