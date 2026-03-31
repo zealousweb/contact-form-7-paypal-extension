@@ -30,7 +30,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			add_action( 'manage_cf7pe_data_posts_custom_column', array( $this, 'action__manage_cf7pe_data_posts_custom_column' ), 10, 2 );
 			add_action( 'restrict_manage_posts', array( $this, 'action__restrict_manage_posts' ) );
 			add_action( 'parse_query', array( $this, 'action__parse_query_cf7pe' ) );
-			add_action('upgrader_process_complete',array( $this, 'option_tbl_upgrade_action', 10, 2) );
+			add_action('upgrader_process_complete',array( $this, 'option_tbl_upgrade_action'), 10, 2);
 		}
 		/**
 		 * Action: option_tbl
