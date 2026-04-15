@@ -416,6 +416,10 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 
 			echo '<input type="submit" id="cf7pe_export_csv" name="cf7pe_export_csv" class="button action" value="' . esc_attr__( 'Export CSV', 'accept-paypal-payments-using-contact-form-7' ) . '"> ';
 
+			echo '<a class="cf7pe-primary-btn" href="https://support.zealousweb.com/portal/en/home" target="_blank" rel="noopener noreferrer">'
+				. esc_html__( 'Open Support Ticket', 'generate-pdf-using-contact-form-7' ) .
+			'</a>';
+
 		}
 		
 		/*
