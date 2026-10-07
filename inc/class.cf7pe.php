@@ -313,6 +313,12 @@ if ( !class_exists( 'CF7PE' ) ) {
 				'not_found'          => __( 'No Transactions Found.', 'accept-paypal-payments-using-contact-form-7' ),
 			);
 
+			// CF7 6.2+ moved the top-level Contact menu slug from wpcf7 to wpcf7-dashboard.
+			$cf7_menu_slug = 'wpcf7';
+			if ( defined( 'WPCF7_VERSION' ) && version_compare( WPCF7_VERSION, '6.2', '>=' ) ) {
+				$cf7_menu_slug = 'wpcf7-dashboard';
+			}
+
 			$args = array(
 				'label' => __( 'Paypal Add-on', 'accept-paypal-payments-using-contact-form-7' ),
 				'labels' => $labels,
@@ -324,7 +330,7 @@ if ( !class_exists( 'CF7PE' ) ) {
 				'show_in_rest' => false,
 				'rest_base' => '',
 				'has_archive' => false,
-				'show_in_menu' => 'wpcf7',
+				'show_in_menu' => $cf7_menu_slug,
 				'show_in_nav_menus' => false,
 				'exclude_from_search' => true,
 				'capability_type' => 'post',
