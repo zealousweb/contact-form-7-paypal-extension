@@ -109,9 +109,6 @@ jQuery(document).ready(function(){
 });
 function refund_payment(entry_id,contact_form_id,transaction_id) {
     var str = 'action=action__refund_payment_free';
-    var contact_form_id;
-    var entry_id;
-	var transaction_id;
     var url1=window.location.href;
     var redirect=url1.split('wp-admin')[0]+'wp-admin/post.php?post='+entry_id+'&action=edit';
     if (contact_form_id != "") {
@@ -123,6 +120,9 @@ function refund_payment(entry_id,contact_form_id,transaction_id) {
 	if (transaction_id != "") {
         str += '&transaction_id=' + transaction_id;
     }
+	if ( typeof admin_ajax_url !== 'undefined' && admin_ajax_url.refund_nonce ) {
+		str += '&nonce=' + encodeURIComponent( admin_ajax_url.refund_nonce );
+	}
     jQuery.ajax({
             url: admin_ajax_url.admin_URL,
             type: "POST",

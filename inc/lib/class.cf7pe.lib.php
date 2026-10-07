@@ -76,9 +76,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			add_filter( 'wpcf7_ajax_json_echo',   array( $this, 'filter__wpcf7_ajax_json_echo'   ), 20, 2 );
 			add_action( 'wpcf7_init', array( $this, 'action__wpcf7_verify_version' ), 10, 0 );
 			
-			// Refund payment functionality
-			add_action('wp_ajax_action__refund_payment_free' ,array( $this, 'action__refund_payment_free'));
-			add_action('wp_ajax_nopriv_action__refund_payment_free', array( $this,'action__refund_payment_free')) ;
+			// Refund payment functionality (authenticated admins only)
+			add_action( 'wp_ajax_action__refund_payment_free', array( $this, 'action__refund_payment_free' ) );
 
 			add_filter( 'wpcf7_validate_onsitepayment',  array( $this, 'wpcf7_onsitepayment_validation_filter' ), 10, 2 );
 			add_filter( 'wpcf7_validate_onsitepayment*', array( $this, 'wpcf7_onsitepayment_validation_filter' ), 10, 2 );
@@ -291,23 +290,37 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		}
 
 		/**
-		 * - Refund payment
+		 * - Refund payment (requires login, capability, nonce, and valid entry ownership)
 		 */
 		function action__refund_payment_free() {
 
+			check_ajax_referer( 'cf7pe_refund_payment', 'nonce' );
+
+			$entry_id         = isset( $_POST['entry_id'] ) ? absint( $_POST['entry_id'] ) : 0;
+			$contact_form_id  = isset( $_POST['contact_form_id'] ) ? absint( $_POST['contact_form_id'] ) : 0;
+			$transaction_id   = isset( $_POST['transaction_id'] ) ? sanitize_text_field( wp_unslash( $_POST['transaction_id'] ) ) : '';
+
+			if (
+				! $entry_id
+				|| ! $contact_form_id
+				|| '' === $transaction_id
+				|| ! current_user_can( 'edit_post', $entry_id )
+			) {
+				wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
+			}
+
+			if ( 'cf7pe_data' !== get_post_type( $entry_id ) ) {
+				wp_send_json_error( array( 'message' => 'Invalid entry' ), 400 );
+			}
+
+			$entry_form_id       = absint( get_post_meta( $entry_id, '_form_id', true ) );
+			$entry_transaction_id = sanitize_text_field( (string) get_post_meta( $entry_id, '_transaction_id', true ) );
+
+			if ( $entry_form_id !== $contact_form_id || $entry_transaction_id !== $transaction_id ) {
+				wp_send_json_error( array( 'message' => 'Entry mismatch' ), 400 );
+			}
+
 			$enable_log = trim( get_option( '' . CF7PE_META_PREFIX . 'enable_log' ) );
-			$contact_form_id = '';
-			$entry_id = '';
-			$transaction_id = '';
-			if( isset($_POST['contact_form_id']) && !empty($_POST['contact_form_id']) ) { //phpcs:ignore
-				$contact_form_id = $_POST['contact_form_id']; //phpcs:ignore
-			}
-			if( isset( $_POST['entry_id']) && !empty( $_POST['entry_id']) ) { //phpcs:ignore
-				$entry_id = $_POST['entry_id']; //phpcs:ignore
-			}
-			if( isset($_POST['transaction_id']) && !empty($_POST['transaction_id']) ) { //phpcs:ignore
-				$transaction_id = $_POST['transaction_id']; //phpcs:ignore
-			}
 			$mode_sandbox = trim( get_post_meta( $contact_form_id, CF7PE_META_PREFIX . 'mode_sandbox', true ) );
 			$sandbox_client_id = get_post_meta( $contact_form_id, CF7PE_META_PREFIX . 'sandbox_client_id', true );
 			$sandbox_client_secret = get_post_meta( $contact_form_id, CF7PE_META_PREFIX . 'sandbox_client_secret', true );
@@ -327,6 +340,11 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$curl_sale_url = CF7PE_LIVE_PMT;
 				$curl_refund_url = CF7PE_LIVE_SALE;
 			}
+
+			if ( empty( $client_id ) || empty( $client_secret ) ) {
+				echo esc_html__( 'PayPal credentials not configured.', 'accept-paypal-payments-using-contact-form-7' );
+				exit();
+			}
 		
 			/* Get PayPal access token via cURL */
 			$ch = curl_init();
@@ -343,9 +361,17 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			$headers[] = "Content-Type: application/x-www-form-urlencoded";
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 			$result = curl_exec($ch);
-			$access_token_id = json_decode($result)->access_token;
-			if (curl_errno($ch)) {
-				echo 'Error:' . curl_error($ch); //phpcs:ignore
+			if ( curl_errno( $ch ) ) {
+				echo 'Error:' . curl_error( $ch ); //phpcs:ignore
+				curl_close( $ch );
+				exit();
+			}
+			curl_close( $ch );
+			$token_data = json_decode( $result );
+			$access_token_id = ( is_object( $token_data ) && ! empty( $token_data->access_token ) ) ? $token_data->access_token : '';
+			if ( empty( $access_token_id ) ) {
+				echo esc_html__( 'Unable to authenticate with PayPal.', 'accept-paypal-payments-using-contact-form-7' );
+				exit();
 			}
 
 			/* Get sale id via cURL */
@@ -360,10 +386,26 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				'Content-Type: application/json'
 			));
 			$response = curl_exec($curl);
+			curl_close( $curl );
 			$response_data=json_decode($response,true);
-			
+
+			$paypal_sale_id = '';
+			if (
+				is_array( $response_data )
+				&& ! empty( $response_data['transactions'][0]['related_resources'][0]['sale']['id'] )
+			) {
+				$paypal_sale_id = sanitize_text_field( $response_data['transactions'][0]['related_resources'][0]['sale']['id'] );
+			}
+
+			if ( empty( $paypal_sale_id ) ) {
+				echo esc_html__( 'Unable to locate PayPal sale for refund.', 'accept-paypal-payments-using-contact-form-7' );
+				if ( $enable_log === '1' ) {
+					wpcf7pap_error_log_generate( 'Unable to locate PayPal sale for refund.' );
+				}
+				exit();
+			}
+
 			/* Payment refund via cURL */
-			$paypal_sale_id = $response_data['transactions'][0]['related_resources'][0]['sale']['id'];
 			$header = Array(
 				"Content-Type: application/json",
 				"Authorization: Bearer $access_token_id",
@@ -373,23 +415,41 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 			curl_setopt($ch, CURLOPT_POST, true);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
-			$response = json_decode(curl_exec($ch));
+			$raw_response = curl_exec( $ch );
 			$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 			curl_close($ch);
-			if( $response->name === 'TRANSACTION_REFUSED'){
+			$response = json_decode( $raw_response );
+
+			if ( is_object( $response ) && isset( $response->name ) && 'TRANSACTION_REFUSED' === $response->name ) {
 				echo 'already payment refund';
 				if($enable_log === '1'){
 					$message="already payment refund.";
 					wpcf7pap_error_log_generate($message);
 				}
+				exit();
+			}
 
-			}else{
+			$refund_succeeded = (
+				$code >= 200
+				&& $code < 300
+				&& is_object( $response )
+				&& ! empty( $response->id )
+				&& isset( $response->state )
+				&& in_array( $response->state, array( 'completed', 'pending' ), true )
+			);
+
+			if ( $refund_succeeded ) {
 				echo 'Payment refund successful';
 				update_post_meta($entry_id, '_transaction_status', 'refunded');
 
 				if($enable_log === '1'){
 					$message="Payment refund successful.";
 					wpcf7pap_error_log_generate($message);
+				}
+			} else {
+				echo esc_html__( 'Payment refund failed.', 'accept-paypal-payments-using-contact-form-7' );
+				if ( $enable_log === '1' ) {
+					wpcf7pap_error_log_generate( 'Payment refund failed. HTTP ' . $code );
 				}
 			}
 			exit();

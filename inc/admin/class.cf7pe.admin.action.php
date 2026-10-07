@@ -90,6 +90,19 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 				&& isset( $_REQUEST['form-id'] )
 				&& !empty( $_REQUEST['form-id'] )
 			) {
+
+				if (
+					! is_user_logged_in()
+					|| ! current_user_can( 'edit_posts' )
+					|| ! isset( $_REQUEST['cf7pe_export_csv_nonce'] )
+					|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_REQUEST['cf7pe_export_csv_nonce'] ) ), 'cf7pe_export_csv' )
+				) {
+					wp_die(
+						esc_html__( 'You are not allowed to export payment data.', 'accept-paypal-payments-using-contact-form-7' ),
+						esc_html__( 'Forbidden', 'accept-paypal-payments-using-contact-form-7' ),
+						array( 'response' => 403 )
+					);
+				}
 				
 				$form_id = sanitize_text_field($_REQUEST['form-id']);
 				$exceed_ct = sanitize_text_field( substr( get_option( '_exceed_cfpezw_l' ), 6 ) );
@@ -414,6 +427,7 @@ if ( !class_exists( 'CF7PE_Admin_Action' ) ){
 			}
 			echo '</select>';
 
+			wp_nonce_field( 'cf7pe_export_csv', 'cf7pe_export_csv_nonce' );
 			echo '<input type="submit" id="cf7pe_export_csv" name="cf7pe_export_csv" class="button action" value="' . esc_attr__( 'Export CSV', 'accept-paypal-payments-using-contact-form-7' ) . '"> ';
 
 			echo '<a class="cf7pe-primary-btn" href="https://support.zealousweb.com/portal/en/home" target="_blank" rel="noopener noreferrer">'
@@ -685,9 +699,10 @@ function cf7pap_ajax_admin_URL() {
 	$MyHomepath = esc_url( home_url( '/' ) );
 	$admin_URL = admin_url( 'admin-ajax.php' ); // Your File Path
 	return array(
-	'admin_URL' => $admin_URL,
-	'MyTemplatepath' => $MyTemplatepath,
-	'MyHomepath' => $MyHomepath,
-	'post_id' => get_the_ID()
+		'admin_URL'      => $admin_URL,
+		'MyTemplatepath' => $MyTemplatepath,
+		'MyHomepath'     => $MyHomepath,
+		'post_id'        => get_the_ID(),
+		'refund_nonce'   => wp_create_nonce( 'cf7pe_refund_payment' ),
 	);
 }

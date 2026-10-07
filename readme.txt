@@ -4,13 +4,13 @@ Contributors: zealopensource
 Tags: Contact Form 7, Paypal, paypal donation, online payment, contact form 7 paypal
 Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
-Tested up to: 7.0
+Tested up to: 7.1.3
 Requires PHP: 5.6
-Stable tag: 4.0.6
+Stable tag: 4.0.7
 License: GPLv3 or later License
 CF7 requires at least: 3.0
-CF7 tested up to: 5.8
-Version: 4.0.6
+CF7 tested up to: 6.2
+Version: 4.0.7
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Integrate PayPal Submit button in Contact Form 7 to Enjoy Quick Online Payments.
@@ -117,6 +117,10 @@ No, you can use a Standard PayPal account.
 On-Site Payment allows users to complete credit card transactions directly on your website without being redirected to an external payment gateway.
 
 == Changelog ==
+
+= 4.0.7 =
+* Security: Restricted PayPal refund AJAX to authenticated users with capability and nonce checks; only mark refunded after a validated PayPal response. Reported by Daniel Dhaniswara (via WPScan).
+* Security: Restricted CSV export of payment submissions to authorized users with a valid nonce. Reported by Enrico Marcolini, Claudio Marchesini and Dottor Marc (via WPScan).
 
 = 4.0.6 =
 * Added a new "Open Support Ticket" button to provide quick and direct access to support.
@@ -236,6 +240,10 @@ On-Site Payment allows users to complete credit card transactions directly on yo
 * Initial Release
 
 == Upgrade Notice ==
+
+= 4.0.7 =
+* Security: Restricted PayPal refund AJAX to authenticated users with capability and nonce checks; only mark refunded after a validated PayPal response. Reported by Daniel Dhaniswara (via WPScan).
+* Security: Restricted CSV export of payment submissions to authorized users with a valid nonce. Reported by Enrico Marcolini, Claudio Marchesini and Dottor Marc (via WPScan).
 
 = 4.0.6 =
 * Added a new "Open Support Ticket" button to provide quick and direct access to support.
