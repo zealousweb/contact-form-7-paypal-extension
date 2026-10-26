@@ -6,11 +6,11 @@ Donate link: http://www.zealousweb.com/payment/
 Requires at least: 3.0.1
 Tested up to: 7.1.3
 Requires PHP: 5.6
-Stable tag: 4.0.7
+Stable tag: 4.0.8
 License: GPLv3 or later License
 CF7 requires at least: 3.0
-CF7 tested up to: 6.2
-Version: 4.0.7
+CF7 tested up to: 6.2.3
+Version: 4.0.8
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
 Integrate PayPal Submit button in Contact Form 7 to Enjoy Quick Online Payments.
@@ -117,6 +117,10 @@ No, you can use a Standard PayPal account.
 On-Site Payment allows users to complete credit card transactions directly on your website without being redirected to an external payment gateway.
 
 == Changelog ==
+
+= 4.0.8 =
+* Security: On-site (JS SDK) payments no longer trust the client-supplied amount when creating or capturing PayPal orders. The expected total is computed from form field configuration (same as the redirect path), verified before capture, and mismatched amount/currency is rejected so underpayment cannot be recorded as Succeeded.
+* Fixed: On-site payment reference and flags are read from the request correctly so capture runs after card approval; success/error messages display after payment completes.
 
 = 4.0.7 =
 * Security: Restricted PayPal refund AJAX to authenticated users with capability and nonce checks; only mark refunded after a validated PayPal response. Reported by Daniel Dhaniswara (via WPScan).
@@ -240,6 +244,10 @@ On-Site Payment allows users to complete credit card transactions directly on yo
 * Initial Release
 
 == Upgrade Notice ==
+
+= 4.0.8 =
+* Security: On-site (JS SDK) payments no longer trust the client-supplied amount when creating or capturing PayPal orders. The expected total is computed from form field configuration (same as the redirect path), verified before capture, and mismatched amount/currency is rejected so underpayment cannot be recorded as Succeeded.
+* Fixed: On-site payment reference and flags are read from the request correctly so capture runs after card approval; success/error messages display after payment completes.
 
 = 4.0.7 =
 * Security: Restricted PayPal refund AJAX to authenticated users with capability and nonce checks; only mark refunded after a validated PayPal response. Reported by Daniel Dhaniswara (via WPScan).
