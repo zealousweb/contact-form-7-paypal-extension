@@ -60,15 +60,25 @@ jQuery( document ).ready( function( $ ) {
                             $wpcf7_form.find('.wpcf7-response-output').hide();
                         }
 
+                        var amount = 0;
                         const amount_attr = $("input[name='cf7pe_amount']").attr("att-cf7pe-name");
                         if (amount_attr) {
-                            const $amountField = $("input[name='" + amount_attr + "']"); // jQuery object
+                            var $amountField = $wpcf7_form.find("input[name='" + amount_attr + "']");
+                            if (!$amountField.length) {
+                                $amountField = $("input[name='" + amount_attr + "']");
+                            }
                             if ($amountField.length) {
                                 const amountValue = parseFloat($amountField.val());
                                 if (!isNaN(amountValue)) {
                                     amount = amountValue;
                                 }
                             }
+                        }
+
+                        if (amount <= 0) {
+                            setProcessing(false, formId);
+                            reject(new Error('Invalid amount'));
+                            return;
                         }
 
                         // Create order using AJAX
@@ -126,39 +136,55 @@ jQuery( document ).ready( function( $ ) {
                         setProcessing(false, formId);
                         
                         if (typeof window.wpcf7 !== 'undefined' && typeof window.wpcf7.submit === 'function') {
-                            window.wpcf7.submit($form[0]);
-                            
-                            // Hide spinner and show response output after a delay
-                            setTimeout(() => {
+                            // Let CF7 show the real response. Clear spinner on any CF7 finish (incl. aborted payment).
+                            var finished = false;
+                            var finish = function(isSuccess) {
+                                if (finished) return;
+                                finished = true;
+                                document.removeEventListener('wpcf7mailsent', onMailSent);
+                                document.removeEventListener('wpcf7mailfailed', onDone);
+                                document.removeEventListener('wpcf7invalid', onDone);
+                                document.removeEventListener('wpcf7spam', onDone);
+                                document.removeEventListener('wpcf7submit', onSubmit);
+                                clearTimeout(safetyTimer);
                                 setProcessing(false, formId);
                                 $form.find('.wpcf7-spinner').css('display', 'none');
-                                $form.find('.wpcf7-response-output')
-                                    .removeClass('wpcf7-validation-errors')
-                                    .addClass('wpcf7-mail-sent-ok')
-                                    .show();
-                                
-                                // Check if dynamic success return URL is available
-                                if (CF7PE_ajax_object.dynamic_success_return_url) {
-                                    // Use dynamic success return URL if available and not empty
-                                    const successUrl = CF7PE_ajax_object.dynamic_success_return_url && CF7PE_ajax_object.dynamic_success_return_url.trim() !== '' 
-                                        ? CF7PE_ajax_object.dynamic_success_return_url 
-                                        : null; // Don't redirect if no URL set
-                                    
-                                    if (successUrl && successUrl.trim() !== '') {
-                                        window.location.href = successUrl;
-                                    }
-                                } else {
-                                    // Use dynamic success return URL if available and not empty
-                                    const successUrl = CF7PE_ajax_object.success_return_url && CF7PE_ajax_object.success_return_url.trim() !== '' 
-                                        ? CF7PE_ajax_object.success_return_url 
-                                        : null; // Don't redirect if no URL set
-                                    
-                                    if (successUrl && successUrl.trim() !== '') {
+                                // Was hidden during createOrder — show CF7 success/error message again.
+                                $form.find('.wpcf7-response-output').show();
+                                if (isSuccess) {
+                                    const successUrl = (CF7PE_ajax_object.dynamic_success_return_url && CF7PE_ajax_object.dynamic_success_return_url.trim() !== '')
+                                        ? CF7PE_ajax_object.dynamic_success_return_url
+                                        : ((CF7PE_ajax_object.success_return_url && CF7PE_ajax_object.success_return_url.trim() !== '')
+                                            ? CF7PE_ajax_object.success_return_url
+                                            : null);
+                                    if (successUrl) {
                                         window.location.href = successUrl;
                                     }
                                 }
                                 resolve();
-                            }, 1000);
+                            };
+                            var onMailSent = function() { finish(true); };
+                            var onDone = function() { finish(false); };
+                            var onSubmit = function(event) {
+                                // Handles aborted payments (amount mismatch) — CF7 status is often "aborted", not mailfailed.
+                                var status = event && event.detail && event.detail.apiResponse
+                                    ? event.detail.apiResponse.status
+                                    : '';
+                                if (status && status !== 'mail_sent') {
+                                    finish(false);
+                                }
+                            };
+                            var safetyTimer = setTimeout(function() { finish(false); }, 20000);
+                            document.addEventListener('wpcf7mailsent', onMailSent);
+                            document.addEventListener('wpcf7mailfailed', onDone);
+                            document.addEventListener('wpcf7invalid', onDone);
+                            document.addEventListener('wpcf7spam', onDone);
+                            document.addEventListener('wpcf7submit', onSubmit);
+                            window.wpcf7.submit($form[0]);
+                        } else {
+                            setProcessing(false, formId);
+                            $form.find('.wpcf7-spinner').css('display', 'none');
+                            resolve();
                         }
                     });
                 },

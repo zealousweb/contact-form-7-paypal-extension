@@ -700,14 +700,17 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 		 * @param  object $contact_form WPCF7_ContactForm::get_instance()
 		 *
 		 */
-		function action__wpcf7_before_send_mail( $contact_form ) {
+		function action__wpcf7_before_send_mail( $contact_form, &$abort = false, $submission = null ) {
 			
-			$submission    = WPCF7_Submission::get_instance(); // CF7 Submission Instance
+			if ( ! $submission instanceof WPCF7_Submission ) {
+				$submission = WPCF7_Submission::get_instance(); // CF7 Submission Instance
+			}
 			
 			$form_ID       = $contact_form->id();
 		
 			$form_instance = WPCF7_ContactForm::get_instance($form_ID); // CF7 From Instance
 
+			$posted_data = array();
 			if ( $submission ) {
 				// CF7 posted data
 				$posted_data = $submission->get_posted_data();
@@ -722,12 +725,19 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 
 				// Check if on-site payment is enabled for this form
 				$enable_on_site_payment = get_post_meta( $form_ID, CF7PE_META_PREFIX . 'enable_on_site_payment', true );
-				
-				$cf7pe_on_site_payment = isset( $posted_data['cf7pe_on_site_payment'] ) ? sanitize_text_field( $posted_data['cf7pe_on_site_payment'] ) : '';
+
+				// Hidden fields are not CF7 form tags, so they are not in get_posted_data() — read from $_POST (same as validation).
+				$cf7pe_on_site_payment = isset( $_POST['cf7pe_on_site_payment'] ) ? sanitize_text_field( wp_unslash( $_POST['cf7pe_on_site_payment'] ) ) : '';
+				if ( empty( $cf7pe_on_site_payment ) && isset( $posted_data['cf7pe_on_site_payment'] ) ) {
+					$cf7pe_on_site_payment = sanitize_text_field( $posted_data['cf7pe_on_site_payment'] );
+				}
 
 				if ( $enable_on_site_payment && $cf7pe_on_site_payment === 'cf7pe_on_site_payment') {
 					// Get and validate payment reference
-					$payment_reference = isset( $posted_data['payment_reference'] ) ? sanitize_text_field( $posted_data['payment_reference'] ) : '';
+					$payment_reference = isset( $_POST['payment_reference'] ) ? sanitize_text_field( wp_unslash( $_POST['payment_reference'] ) ) : '';
+					if ( empty( $payment_reference ) && isset( $posted_data['payment_reference'] ) ) {
+						$payment_reference = sanitize_text_field( $posted_data['payment_reference'] );
+					}
 					
 					// Validate payment reference exists
 					if ( empty( $payment_reference ) ) {
@@ -1304,6 +1314,8 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 				$amount_value = '';
 				$currency_code = '';
 				$payer_email = '';
+				$order_status = isset( $api_data['status'] ) ? $api_data['status'] : '';
+				$pending_reason = '';
 
 				if (!empty($api_data['purchase_units'][0]['payments']['captures'][0])) {
 					$capture = $api_data['purchase_units'][0]['payments']['captures'][0];
@@ -1311,14 +1323,45 @@ if ( !class_exists( 'CF7PE_Lib' ) ) {
 					$payment_status = $capture['status'];
 					$amount_value = $capture['amount']['value'];
 					$currency_code = $capture['amount']['currency_code'];
+					if ( ! empty( $capture['status_details']['reason'] ) ) {
+						$pending_reason = $capture['status_details']['reason'];
+					}
 				}
 
 				if (!empty($api_data['payer']['email_address'])) {
 					$payer_email = $api_data['payer']['email_address'];
 				}
 
-				// Store transaction in WordPress if payment is completed or approved
-				if (!empty($transaction_id) && ($payment_status === 'COMPLETED' || $payment_status === 'APPROVED')) {
+				// Order COMPLETED + capture PENDING (common sandbox receiving-preference hold) still counts as paid.
+				$treat_as_succeeded = (
+					$payment_status === 'COMPLETED'
+					|| $payment_status === 'APPROVED'
+					|| $order_status === 'COMPLETED'
+					|| ( $payment_status === 'PENDING' && $pending_reason === 'RECEIVING_PREFERENCE_MANDATES_MANUAL_ACTION' )
+				);
+
+				$acceptable_statuses = array( 'COMPLETED', 'APPROVED', 'PENDING' );
+				if ( ! empty( $transaction_id ) && in_array( $payment_status, $acceptable_statuses, true ) && $treat_as_succeeded ) {
+
+					// Validate captured amount against form field total (do not trust client order amount).
+					$amount_field   = get_post_meta( $form_id, CF7PE_META_PREFIX . 'amount', true );
+					$quantity_field = get_post_meta( $form_id, CF7PE_META_PREFIX . 'quantity', true );
+					$currency       = get_post_meta( $form_id, CF7PE_META_PREFIX . 'currency', true );
+					$amount_val     = ( ( ! empty( $amount_field ) && is_array( $posted_data ) && array_key_exists( $amount_field, $posted_data ) ) ? floatval( $posted_data[ $amount_field ] ) : 0 );
+					$quanity_val    = ( ( ! empty( $quantity_field ) && is_array( $posted_data ) && array_key_exists( $quantity_field, $posted_data ) ) ? floatval( $posted_data[ $quantity_field ] ) : '' );
+					$amountPayable  = (float) ( empty( $quanity_val ) ? $amount_val : ( $quanity_val * $amount_val ) );
+
+					if ( $amountPayable <= 0 || abs( round( (float) $amount_value, 2 ) - round( $amountPayable, 2 ) ) >= 0.005 ) {
+						$result['message'] = 'Payment amount does not match the form total.';
+						return $result;
+					}
+
+					// Only enforce currency when the form has one configured (empty meta used to block all on-site saves).
+					if ( ! empty( $currency ) && strtoupper( (string) $currency_code ) !== strtoupper( (string) $currency ) ) {
+						$result['message'] = 'Payment currency does not match the form currency.';
+						return $result;
+					}
+
 					$cf7pap_post_id = wp_insert_post(array(
 						'post_type' => 'cf7pe_data',
 						'post_title' => $transaction_id,
