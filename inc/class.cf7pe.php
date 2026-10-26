@@ -486,11 +486,27 @@ if ( !class_exists( 'CF7PE' ) ) {
 				return;
 			}
 
-			// Get amount
-			$amount = isset($_POST['amount']) ? floatval($_POST['amount']) : 10;
-			if ($amount <= 0) {
+			// Compute amount from form field config (same formula as redirect path).
+			$amount_field   = get_post_meta( $form_id, CF7PE_META_PREFIX . 'amount', true );
+			$quantity_field = get_post_meta( $form_id, CF7PE_META_PREFIX . 'quantity', true );
+			$currency       = get_post_meta( $form_id, CF7PE_META_PREFIX . 'currency', true );
+
+			$amount_val = 0;
+			if ( ! empty( $amount_field ) && isset( $_POST[ $amount_field ] ) ) {
+				$amount_val = floatval( $_POST[ $amount_field ] );
+			} elseif ( isset( $_POST['amount'] ) ) {
+				$amount_val = floatval( $_POST['amount'] );
+			}
+
+			$quanity_val = '';
+			if ( ! empty( $quantity_field ) && isset( $_POST[ $quantity_field ] ) ) {
+				$quanity_val = floatval( $_POST[ $quantity_field ] );
+			}
+
+			$amount = (float) ( empty( $quanity_val ) ? $amount_val : ( $quanity_val * $amount_val ) );
+			if ( $amount <= 0 ) {
 				$response['msg'] = 'Invalid amount';
-				wp_send_json($response);
+				wp_send_json( $response );
 				return;
 			}
 
@@ -500,7 +516,6 @@ if ( !class_exists( 'CF7PE' ) ) {
 			$sandbox_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'sandbox_client_secret', true);
 			$live_client_id = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_id', true);
 			$live_client_secret = get_post_meta($form_id, CF7PE_META_PREFIX . 'live_client_secret', true);
-			$currency = get_post_meta($form_id, CF7PE_META_PREFIX . 'currency', true);
 			
 			// Get dynamic return URLs from post meta
 			$success_returnURL = get_post_meta($form_id, CF7PE_META_PREFIX . 'success_returnurl', true);
