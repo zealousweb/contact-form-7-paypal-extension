@@ -8,7 +8,7 @@ on:
     branches:
       - master
     paths:
-      - '.github/workflows/release.yml'
+      - '.github/deploy-4.0.8.txt'
 
 jobs:
   tag:
@@ -16,21 +16,17 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout code
+      - name: Checkout version 4.0.8
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'push' && '4.0.8' || github.event.release.tag_name }}
+          ref: 4.0.8
           fetch-depth: 0
 
-      - name: Verify release version
-        shell: bash
-        env:
-          TARGET_VERSION: ${{ github.event_name == 'push' && '4.0.8' || github.event.release.tag_name }}
+      - name: Verify version
         run: |
-          git tag --points-at HEAD | grep -Fx "$TARGET_VERSION"
+          git tag --points-at HEAD | grep -Fx "4.0.8"
 
       - name: WordPress Plugin Deploy
-        id: deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         with:
           generate-zip: true
@@ -38,15 +34,4 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: contact-form-7-paypal-extension
-          VERSION: ${{ github.event_name == 'push' && '4.0.8' || github.event.release.tag_name }}
-
-      - name: Upload release asset
-        if: github.event_name == 'release'
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ github.workspace }}/contact-form-7-paypal-extension.zip
-          asset_name: ${{ github.event.repository.name }}.zip
-          asset_content_type: application/zip
+          VERSION: 4.0.8
