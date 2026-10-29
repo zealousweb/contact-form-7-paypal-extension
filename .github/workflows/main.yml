@@ -8,39 +8,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Plugin version to deploy (e.g. 4.0.8)"
+        description: "Plugin version to deploy"
         required: true
+        default: "4.0.8"
         type: string
 
-permissions:
-  contents: read
-
-jobs:
-  deploy:
-    name: Deploy plugin
-    runs-on: ubuntu-24.04
-
-    steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.release.tag_name || inputs.version }}
-          fetch-depth: 0
-
-      - name: Verify version tag
-        env:
-          VERSION: ${{ github.event.release.tag_name || inputs.version }}
-        run: |
-          set -e
-          git tag --points-at HEAD | grep -Fx "$VERSION"
-          echo "Verified release tag: $VERSION"
-
-      - name: Deploy to WordPress.org
-        uses: 10up/action-wordpress-plugin-deploy@stable
-        with:
-          generate-zip: true
-        env:
-          SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
-          SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
-          SLUG: contact-form-7-paypal-extension
-          VERSION: ${{ github.event.release.tag_name || inputs.version }}
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/deploy-4.0.8.txt'
