@@ -1,41 +1,20 @@
-
 name: Deploy to WordPress.org
+
 
 on:
   release:
-    types: [published]
-
-  workflow_dispatch:
-    inputs:
-      version:
-        description: "Plugin version to deploy (e.g. 4.0.8)"
-        required: true
-        type: string
-
-permissions:
-  contents: read
+    types: [ released ]
 
 jobs:
-  deploy:
-    name: Deploy plugin
+  tag:
+    name: New release
     runs-on: ubuntu-24.04
-
     steps:
-      - name: Checkout release tag
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.release.tag_name || inputs.version }}
-          fetch-depth: 0
-
-      - name: Verify version tag
-        env:
-          VERSION: ${{ github.event.release.tag_name || inputs.version }}
-        run: |
-          set -e
-          git tag --points-at HEAD | grep -Fx "$VERSION"
-          echo "Verified release tag: $VERSION"
-
-      - name: Deploy to WordPress.org
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: WordPress Plugin Deploy
+        id: deploy
         uses: 10up/action-wordpress-plugin-deploy@stable
         with:
           generate-zip: true
@@ -43,4 +22,14 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: contact-form-7-paypal-extension
-          VERSION: ${{ github.event.release.tag_name || inputs.version }}
+
+
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{github.workspace}}/contact-form-7-paypal-extension.zip
+          asset_name: ${{ github.event.repository.name }}.zip
+          asset_content_type: application/zip
