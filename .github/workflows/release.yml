@@ -3,30 +3,39 @@ name: Deploy to WordPress.org
 
 on:
   release:
-    types: [released]
-  push:
-    branches:
-      - master
-    paths:
-      - '.github/deploy-4.0.8.txt'
+    types: [published]
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Plugin version to deploy (e.g. 4.0.8)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
 
 jobs:
-  tag:
-    name: New release
+  deploy:
+    name: Deploy plugin
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout version 4.0.8
+      - name: Checkout release tag
         uses: actions/checkout@v4
         with:
-          ref: 4.0.8
+          ref: ${{ github.event.release.tag_name || inputs.version }}
           fetch-depth: 0
 
-      - name: Verify version
+      - name: Verify version tag
+        env:
+          VERSION: ${{ github.event.release.tag_name || inputs.version }}
         run: |
-          git tag --points-at HEAD | grep -Fx "4.0.8"
+          set -e
+          git tag --points-at HEAD | grep -Fx "$VERSION"
+          echo "Verified release tag: $VERSION"
 
-      - name: WordPress Plugin Deploy
+      - name: Deploy to WordPress.org
         uses: 10up/action-wordpress-plugin-deploy@stable
         with:
           generate-zip: true
@@ -34,4 +43,4 @@ jobs:
           SVN_USERNAME: ${{ secrets.SVN_USERNAME }}
           SVN_PASSWORD: ${{ secrets.SVN_PASSWORD }}
           SLUG: contact-form-7-paypal-extension
-          VERSION: 4.0.8
+          VERSION: ${{ github.event.release.tag_name || inputs.version }}
