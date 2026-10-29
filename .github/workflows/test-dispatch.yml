@@ -13,5 +13,5 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     steps:
-      - name: Verify GitHub Actions
+      - name: Test GitHub Actions
         run: echo "GitHub Actions is working"
