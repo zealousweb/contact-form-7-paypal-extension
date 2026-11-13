@@ -119,7 +119,7 @@ On-Site Payment allows users to complete credit card transactions directly on yo
 == Changelog ==
 
 = 4.0.8 =
-* Security: On-site (JS SDK) payments no longer trust the client-supplied amount when creating or capturing PayPal orders. The expected total is computed from form field configuration (same as the redirect path), verified before capture, and mismatched amount/currency is rejected so underpayment cannot be recorded as Succeeded.
+* Security: On-site (JS SDK) payments no longer trust the client-supplied amount when creating or capturing PayPal orders. The expected total is computed from form field configuration (same as the redirect path), verified before capture, and mismatched amount/currency is rejected so underpayment cannot be recorded as Succeeded.(Reported by kta1kri (https://github.com/kta1kri))
 * Fixed: On-site payment reference and flags are read from the request correctly so capture runs after card approval; success/error messages display after payment completes.
 
 = 4.0.7 =
@@ -246,7 +246,7 @@ On-Site Payment allows users to complete credit card transactions directly on yo
 == Upgrade Notice ==
 
 = 4.0.8 =
-* Security: On-site (JS SDK) payments no longer trust the client-supplied amount when creating or capturing PayPal orders. The expected total is computed from form field configuration (same as the redirect path), verified before capture, and mismatched amount/currency is rejected so underpayment cannot be recorded as Succeeded.
+* Security: On-site (JS SDK) payments no longer trust the client-supplied amount when creating or capturing PayPal orders. The expected total is computed from form field configuration (same as the redirect path), verified before capture, and mismatched amount/currency is rejected so underpayment cannot be recorded as Succeeded.(Reported by kta1kri (https://github.com/kta1kri))
 * Fixed: On-site payment reference and flags are read from the request correctly so capture runs after card approval; success/error messages display after payment completes.
 
 = 4.0.7 =
