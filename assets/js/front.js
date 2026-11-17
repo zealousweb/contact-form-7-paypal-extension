@@ -10,6 +10,37 @@ jQuery( document ).ready( function( $ ) {
 	} );
     // Create a namespace for our payment handling
     window.CF7PayPal = window.CF7PayPal || {};
+
+    // Must be declared before initializePayPalForm() runs (avoids TDZ / "Cannot access 'r' before initialization")
+    const setProcessing = (isProcessing, formId) => {
+        const $form = $('form.wpcf7-form').filter(function() {
+            return $(this).find('input[name="_wpcf7"]').val() === formId;
+        });
+        const $overlay = $form.find(".overlay");
+        if ($overlay.length) {
+            $overlay.css('display', isProcessing ? 'block' : 'none')
+                   .toggleClass('hidden', !isProcessing);
+        }
+    };
+
+    const resultMessage = (msg_txt, formId) => {
+        const $form = $('form.wpcf7-form').filter(function() {
+            return $(this).find('input[name="_wpcf7"]').val() === formId;
+        });
+        const $messageContainer = $form.find("#paymentResponse");
+        if ($messageContainer.length) {
+            $messageContainer.removeClass('hidden')
+                           .text(msg_txt);
+
+            setTimeout(function () {
+                $messageContainer.addClass('hidden')
+                               .text('');
+            }, 5000);
+        } else {
+            console.log('Payment message:', msg_txt);
+        }
+    };
+
     // Only initialize once per form
     function initializePayPalForm($form) {
         const formId = $form.find('input[name="_wpcf7"]').val();
@@ -319,35 +350,4 @@ jQuery( document ).ready( function( $ ) {
             initializePayPalForm($form);
         }
     });
-    
-    // Show a loader on payment form processing
-    const setProcessing = (isProcessing, formId) => {
-        const $form = $('form.wpcf7-form').filter(function() {
-            return $(this).find('input[name="_wpcf7"]').val() === formId;
-        });
-        const $overlay = $form.find(".overlay");
-        if ($overlay.length) {
-            $overlay.css('display', isProcessing ? 'block' : 'none')
-                   .toggleClass('hidden', !isProcessing);
-        }
-    }
-    
-    // Display status message
-    const resultMessage = (msg_txt, formId) => {
-        const $form = $('form.wpcf7-form').filter(function() {
-            return $(this).find('input[name="_wpcf7"]').val() === formId;
-        });
-        const $messageContainer = $form.find("#paymentResponse");
-        if ($messageContainer.length) {
-            $messageContainer.removeClass('hidden')
-                           .text(msg_txt);
-            
-            setTimeout(function () {
-                $messageContainer.addClass('hidden')
-                               .text('');
-            }, 5000);
-        } else {
-            console.log('Payment message:', msg_txt);
-        }
-    }
 });
